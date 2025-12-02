@@ -16,8 +16,6 @@ Manage your shortcuts programmatically with the Creator API. Create, update, and
   - [Submit Shortcut for Review](#post-apiv1shortcutsuuidsubmit)
   - [Update Shortcut](#post-apiv1shortcutsuuidupdate)
   - [Upload Screenshot](#post-apiv1uploadscreenshot)
-- [Error Codes](#error-codes)
-- [Important Notes](#important-notes)
 
 ## Base URL
 
@@ -761,32 +759,3 @@ curl -X POST "https://shortcuty.app/api/v1/upload/screenshot" \
 - Only the shortcut author can upload screenshots
 - File content is validated for security
 - Supported formats: PNG, JPG, JPEG, GIF, SVG, WEBP
-
----
-
-## Error Codes
-
-Common HTTP status codes returned by the API.
-
-| Status Code | Description |
-|-------------|-------------|
-| `200 OK` | Request successful |
-| `201 Created` | Resource created successfully |
-| `400 Bad Request` | Invalid request data, missing required fields, or validation errors |
-| `401 Unauthorized` | Missing or invalid API key |
-| `403 Forbidden` | Permission denied (not the resource owner) |
-| `404 Not Found` | Resource not found or user doesn't have permission to view |
-| `409 Conflict` | Resource conflict (e.g., trying to create a second API key) |
-| `500 Internal Server Error` | Server error |
-
----
-
-## Important Notes
-
-- **Shortcut identifiers must be UUIDs** - When using shortcut identifiers in endpoints, use the UUID format
-- **Users can only access/modify their own shortcuts** - No admin privileges via API key
-- **Draft shortcuts can be updated immediately** - Approved shortcuts require admin review for updates
-- **All timestamps are in ISO 8601 format (UTC)** - All date/time fields use ISO 8601 format in UTC timezone
-- **Screenshot and profile picture URLs are always full URLs** - Not relative paths
-- **Sharing URLs must be valid iCloud shortcut sharing URLs** - Format: `https://www.icloud.com/shortcuts/...`
-
