@@ -2,6 +2,23 @@
 
 Manage your shortcuts programmatically with the Creator API. Create, update, and manage your shortcuts.
 
+## Table of Contents
+
+- [Base URL](#base-url)
+- [Getting Started](#getting-started)
+- [Authentication](#authentication)
+- [API Endpoints](#api-endpoints)
+  - [GET /api/v1/categories](#get-apiv1categories)
+  - [POST /api/v1/shortcuts](#post-apiv1shortcuts)
+  - [GET /api/v1/shortcuts/my](#get-apiv1shortcutsmy)
+  - [GET /api/v1/shortcuts/{uuid}](#get-apiv1shortcutsuuid)
+  - [GET /api/v1/shortcuts/{shortcut_identifier}/history](#get-apiv1shortcutsshortcut_identifierhistory)
+  - [POST /api/v1/shortcuts/{uuid}/submit](#post-apiv1shortcutsuuidsubmit)
+  - [POST /api/v1/shortcuts/{uuid}/update](#post-apiv1shortcutsuuidupdate)
+  - [POST /api/v1/upload/screenshot](#post-apiv1uploadscreenshot)
+- [Error Codes](#error-codes)
+- [Important Notes](#important-notes)
+
 ## Base URL
 
 ```
