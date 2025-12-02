@@ -140,11 +140,22 @@ Create a new shortcut (draft) with optional immediate submission.
 {
   "message": "string",
   "shortcut": {
-    "id": "integer",
     "uuid": "string (UUID)",
     "name": "string",
     "status": "string",
-    "created_at": "string (ISO 8601)"
+    "created_at": "string (ISO 8601)",
+    "updated_at": "string (ISO 8601)",
+    "author": "string",
+    "author_profile_picture": "string (URL)",
+    "category": "string | null",
+    "description": "string",
+    "downloads": "integer",
+    "icon_filename": "string | null",
+    "likes_count": "integer",
+    "version": "string",
+    "sharing_url": "string (URL)",
+    "requires_ios26_ai": "boolean",
+    "updater_type": "string"
   }
 }
 ```
@@ -155,11 +166,22 @@ Create a new shortcut (draft) with optional immediate submission.
 |-------|------|-------------|
 | `message` | `string` | Success message |
 | `shortcut` | `object` | Created shortcut object |
-| `shortcut.id` | `integer` | Shortcut ID |
 | `shortcut.uuid` | `string` | Shortcut UUID |
 | `shortcut.name` | `string` | Shortcut name |
 | `shortcut.status` | `string` | Shortcut status (e.g., `"draft"`) |
 | `shortcut.created_at` | `string` | Creation timestamp in ISO 8601 format (UTC) |
+| `shortcut.updated_at` | `string` | Last update timestamp in ISO 8601 format (UTC) |
+| `shortcut.author` | `string` | Author name |
+| `shortcut.author_profile_picture` | `string` | Full URL to author's profile picture |
+| `shortcut.category` | `string \| null` | Category name or null |
+| `shortcut.description` | `string` | Shortcut description |
+| `shortcut.downloads` | `integer` | Number of downloads |
+| `shortcut.icon_filename` | `string \| null` | Icon filename or null |
+| `shortcut.likes_count` | `integer` | Number of likes |
+| `shortcut.version` | `string` | Version string |
+| `shortcut.sharing_url` | `string` | iCloud sharing URL |
+| `shortcut.requires_ios26_ai` | `boolean` | Whether shortcut requires iOS 26 AI features |
+| `shortcut.updater_type` | `string` | Updater type (`"shortcuty"`, `"third_party"`, or `"none"`) |
 
 **Example Response:**
 
@@ -167,11 +189,22 @@ Create a new shortcut (draft) with optional immediate submission.
 {
   "message": "Draft shortcut created",
   "shortcut": {
-    "id": 123,
     "uuid": "550e8400-e29b-41d4-a716-446655440000",
     "name": "Untitled Shortcut",
     "status": "draft",
-    "created_at": "2025-12-01T10:00:00Z"
+    "created_at": "2025-12-01T10:00:00Z",
+    "updated_at": "2025-12-01T10:00:00Z",
+    "author": "Example User",
+    "author_profile_picture": "https://shortcuty.app/uploads/profiles/example.png",
+    "category": null,
+    "description": "",
+    "downloads": 0,
+    "icon_filename": null,
+    "likes_count": 0,
+    "version": "1.0",
+    "sharing_url": "https://www.icloud.com/shortcuts/test123",
+    "requires_ios26_ai": false,
+    "updater_type": "none"
   }
 }
 ```
@@ -232,7 +265,27 @@ Get paginated list of your shortcuts.
 
 ```json
 {
-  "shortcuts": [...],
+  "shortcuts": [
+    {
+      "uuid": "7c182d30-4520-410e-a355-2a60e62c1f30",
+      "name": "Example Shortcut",
+      "status": "pending",
+      "created_at": "2025-12-02T23:03:12Z",
+      "updated_at": "2025-12-02T23:03:30Z",
+      "author": "Example User",
+      "author_profile_picture": "https://shortcuty.app/uploads/profiles/example.png",
+      "category": "Technology",
+      "description": "Example description",
+      "downloads": 0,
+      "icon_filename": null,
+      "likes_count": 0,
+      "version": "1.0",
+      "sharing_url": "https://www.icloud.com/shortcuts/test-url",
+      "requires_ios26_ai": false,
+      "updater_type": "none",
+      "rejection_reason": null
+    }
+  ],
   "total": 25,
   "pages": 2,
   "current_page": 1
@@ -268,22 +321,26 @@ Get shortcut details by UUID, including comments, screenshots, and latest update
 
 ```json
 {
-  "id": "integer",
-  "uuid": "string (UUID)",
-  "name": "string",
-  "status": "string",
-  "created_at": "string (ISO 8601)",
-  "author": "string",
-  "author_profile_picture": "string (URL)",
-  "category": "string",
-  "description": "string",
-  "downloads": "integer",
-  "icon_filename": "string | null",
-  "likes_count": "integer",
-  "version": "string",
-  "sharing_url": "string (URL)",
-  "requires_ios26_ai": "boolean",
-  "updater_type": "string",
+  "shortcut": {
+    "uuid": "string (UUID)",
+    "name": "string",
+    "status": "string",
+    "created_at": "string (ISO 8601)",
+    "updated_at": "string (ISO 8601)",
+    "author": "string",
+    "author_profile_picture": "string (URL)",
+    "category": "string",
+    "description": "string",
+    "downloads": "integer",
+    "icon_filename": "string | null",
+    "liked": "boolean",
+    "likes_count": "integer",
+    "version": "string",
+    "sharing_url": "string (URL)",
+    "requires_ios26_ai": "boolean",
+    "updater_type": "string",
+    "rejection_reason": "string | null"
+  },
   "comments": ["array"],
   "screenshots": ["array"],
   "latest_update": "object | null"
@@ -294,22 +351,25 @@ Get shortcut details by UUID, including comments, screenshots, and latest update
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | `integer` | Shortcut ID |
-| `uuid` | `string` | Shortcut UUID |
-| `name` | `string` | Shortcut name |
-| `status` | `string` | Shortcut status (e.g., `"draft"`, `"pending"`, `"approved"`, `"rejected"`) |
-| `created_at` | `string` | Creation timestamp in ISO 8601 format (UTC) |
-| `author` | `string` | Author name |
-| `author_profile_picture` | `string` | Full URL to author's profile picture |
-| `category` | `string` | Category name |
-| `description` | `string` | Shortcut description |
-| `downloads` | `integer` | Number of downloads |
-| `icon_filename` | `string \| null` | Icon filename or null |
-| `likes_count` | `integer` | Number of likes |
-| `version` | `string` | Version string |
-| `sharing_url` | `string` | iCloud sharing URL |
-| `requires_ios26_ai` | `boolean` | Whether shortcut requires iOS 26 AI features |
-| `updater_type` | `string` | Updater type (`"shortcuty"`, `"third_party"`, or `"none"`) |
+| `shortcut` | `object` | Shortcut object |
+| `shortcut.uuid` | `string` | Shortcut UUID |
+| `shortcut.name` | `string` | Shortcut name |
+| `shortcut.status` | `string` | Shortcut status (e.g., `"draft"`, `"pending"`, `"approved"`, `"rejected"`) |
+| `shortcut.created_at` | `string` | Creation timestamp in ISO 8601 format (UTC) |
+| `shortcut.updated_at` | `string` | Last update timestamp in ISO 8601 format (UTC) |
+| `shortcut.author` | `string` | Author name |
+| `shortcut.author_profile_picture` | `string` | Full URL to author's profile picture |
+| `shortcut.category` | `string` | Category name |
+| `shortcut.description` | `string` | Shortcut description |
+| `shortcut.downloads` | `integer` | Number of downloads |
+| `shortcut.icon_filename` | `string \| null` | Icon filename or null |
+| `shortcut.liked` | `boolean` | Whether the current user has liked this shortcut |
+| `shortcut.likes_count` | `integer` | Number of likes |
+| `shortcut.version` | `string` | Version string |
+| `shortcut.sharing_url` | `string` | iCloud sharing URL |
+| `shortcut.requires_ios26_ai` | `boolean` | Whether shortcut requires iOS 26 AI features |
+| `shortcut.updater_type` | `string` | Updater type (`"shortcuty"`, `"third_party"`, or `"none"`) |
+| `shortcut.rejection_reason` | `string \| null` | Rejection reason if status is `"rejected"`, otherwise null |
 | `comments` | `array` | Array of comments |
 | `screenshots` | `array` | Array of screenshots |
 | `latest_update` | `object \| null` | Latest update object or null |
@@ -318,22 +378,26 @@ Get shortcut details by UUID, including comments, screenshots, and latest update
 
 ```json
 {
-  "id": 123,
-  "uuid": "550e8400-e29b-41d4-a716-446655440000",
-  "name": "Example Shortcut",
-  "status": "draft",
-  "created_at": "2025-12-01T10:00:00Z",
-  "author": "Example User",
-  "author_profile_picture": "https://shortcuty.app/uploads/profiles/example.png",
-  "category": "Artificial Intelligence",
-  "description": "This is an example shortcut description that demonstrates the response structure...",
-  "downloads": 0,
-  "icon_filename": null,
-  "likes_count": 0,
-  "version": "1.0",
-  "sharing_url": "https://www.icloud.com/shortcuts/550e8400e4a646aea502f3cf06a97e44",
-  "requires_ios26_ai": false,
-  "updater_type": "none",
+  "shortcut": {
+    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Example Shortcut",
+    "status": "draft",
+    "created_at": "2025-12-01T10:00:00Z",
+    "updated_at": "2025-12-01T10:00:00Z",
+    "author": "Example User",
+    "author_profile_picture": "https://shortcuty.app/uploads/profiles/example.png",
+    "category": "Artificial Intelligence",
+    "description": "This is an example shortcut description that demonstrates the response structure...",
+    "downloads": 0,
+    "icon_filename": null,
+    "liked": false,
+    "likes_count": 0,
+    "version": "1.0",
+    "sharing_url": "https://www.icloud.com/shortcuts/550e8400e4a646aea502f3cf06a97e44",
+    "requires_ios26_ai": false,
+    "updater_type": "none",
+    "rejection_reason": null
+  },
   "comments": [],
   "screenshots": [],
   "latest_update": null
