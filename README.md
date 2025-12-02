@@ -10,15 +10,17 @@ https://shortcuty.app/api/v1
 
 ## Getting Started
 
-All v1 API endpoints require API key authentication. Get your API key from your account settings on the Shortcuty website (not available in the iOS app).
+Most v1 API endpoints require API key authentication. Some endpoints (like `/api/v1/categories`) are public and do not require authentication. Get your API key from your account settings on the Shortcuty website (not available in the iOS app).
 
 ## Authentication
 
-Include your API key in the `Authorization` header for all requests:
+Most API endpoints require authentication. Include your API key in the `Authorization` header for authenticated requests:
 
 ```
 Authorization: Bearer <your-api-key>
 ```
+
+Public endpoints (marked as **PUBLIC** in the documentation) do not require authentication.
 
 To get an API key, visit your Account Settings on the Shortcuty website (https://shortcuty.app) and create one in the API Key Management section. **Note:** API keys can only be created and managed on the website, not in the iOS app.
 
