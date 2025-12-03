@@ -225,11 +225,6 @@ Get shortcut by UUID with screenshots.
 **Error Responses:**
 
 - `404 Not Found`: Shortcut not found or not accessible
-  ```json
-  {
-    "error": "Shortcut not found"
-  }
-  ```
 
 ---
 
@@ -275,11 +270,6 @@ Get version history for a shortcut owned by the authenticated user.
 **Error Responses:**
 
 - `404 Not Found`: Shortcut not found or not owned by user
-```json
-{
-    "error": "Shortcut not found"
-}
-```
 
 ---
 
@@ -306,23 +296,8 @@ Submit a draft shortcut for review.
 **Error Responses:**
 
 - `400 Bad Request`: Shortcut is not a draft or rejected shortcut
-  ```json
-  {
-    "error": "Shortcut is not a draft or rejected shortcut"
-  }
-  ```
 - `403 Forbidden`: Permission denied
-  ```json
-  {
-    "error": "Permission denied"
-  }
-  ```
 - `404 Not Found`: Shortcut not found
-  ```json
-  {
-    "error": "Shortcut not found"
-  }
-```
 
 ---
 
@@ -387,54 +362,9 @@ Unified endpoint for updating shortcuts.
 **Error Responses:**
 
 - `400 Bad Request`: No changes provided, invalid field values, or validation errors
-  ```json
-  {
-    "error": "No changes provided"
-  }
-  ```
-  ```json
-  {
-    "error": "Description must be 500,000 characters or less"
-  }
-  ```
-  ```json
-  {
-    "error": "Changelog must be 10,000 characters or less"
-  }
-  ```
-  ```json
-  {
-    "error": "Sharing URL must be an iCloud sharing URL (https://www.icloud.com/shortcuts/...)"
-  }
-  ```
-  ```json
-  {
-    "error": "Invalid category. Must be one of: Artificial Intelligence, Education, ..."
-  }
-  ```
-  ```json
-  {
-    "error": "Invalid updater_type. Must be one of: shortcuty, third_party, none"
-  }
-  ```
 - `403 Forbidden`: Permission denied
-  ```json
-  {
-    "error": "Permission denied"
-  }
-  ```
 - `404 Not Found`: Shortcut not found
-  ```json
-  {
-    "error": "Shortcut not found"
-  }
-  ```
 - `500 Internal Server Error`: Server error
-  ```json
-  {
-    "error": "Internal server error during shortcut update"
-  }
-  ```
 
 ---
 
@@ -473,43 +403,8 @@ Upload a screenshot for a shortcut.
 **Error Responses:**
 
 - `400 Bad Request`: No file provided, invalid file extension, file validation failed, or screenshot limit reached
-  ```json
-  {
-    "error": "No file provided"
-  }
-  ```
-  ```json
-  {
-    "error": "Shortcut ID required"
-  }
-  ```
-  ```json
-  {
-    "error": "Invalid file extension"
-  }
-  ```
-  ```json
-  {
-    "error": "File content validation failed"
-  }
-  ```
-  ```json
-  {
-    "error": "Maximum of 5 screenshots allowed per shortcut"
-  }
-  ```
 - `403 Forbidden`: Permission denied (not the shortcut author)
-  ```json
-  {
-    "error": "Permission denied"
-  }
-  ```
 - `404 Not Found`: Shortcut not found
-  ```json
-  {
-    "error": "Shortcut not found"
-  }
-  ```
 
 ---
 
@@ -537,33 +432,8 @@ Delete a screenshot for a shortcut.
 **Error Responses:**
 
 - `403 Forbidden`: Permission denied or screenshot doesn't belong to shortcut
-  ```json
-  {
-    "error": "Permission denied"
-  }
-  ```
-  ```json
-  {
-    "error": "Screenshot does not belong to this shortcut"
-  }
-  ```
 - `404 Not Found`: Shortcut or screenshot not found
-  ```json
-  {
-    "error": "Shortcut not found"
-}
-```
-  ```json
-  {
-    "error": "Screenshot not found"
-  }
-  ```
 - `500 Internal Server Error`: Failed to delete screenshot
-  ```json
-  {
-    "error": "Failed to delete screenshot"
-  }
-  ```
 
 ---
 
