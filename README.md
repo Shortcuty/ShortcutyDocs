@@ -716,3 +716,18 @@ curl -X POST https://shortcuty.app/api/v1/upload/screenshot \
   -F "file=@screenshot.png" \
   -F "shortcut_id=UUID"
 ```
+
+---
+
+## Command-Line Interface
+
+A command-line interface for managing shortcuts via the Shortcuty Creator API v1 is available:
+
+**[Shortcuty Creator API CLI](https://github.com/Shortcuty/Shortcuty-CLI)**
+
+The CLI provides an easy way to interact with the API from your terminal, with features including:
+- Create, update, and manage shortcuts
+- Upload and delete screenshots
+- View shortcut history and changelogs
+- List and filter your shortcuts
+- JSON output support for scripting
