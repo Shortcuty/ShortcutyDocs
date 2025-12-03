@@ -12,7 +12,7 @@ Most v1 endpoints require API key authentication using the `Authorization` heade
 Authorization: Bearer <your-api-key>
 ```
 
-API keys are UUID v4 format strings. Get your API key from the `/api/auth/api-key` endpoint (requires user authentication).
+API keys are UUID v4 format strings.
 
 **Note:** The `/categories` endpoint is public and does not require authentication.
 
