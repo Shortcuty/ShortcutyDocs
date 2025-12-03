@@ -1,75 +1,32 @@
-# Shortcuty Creator API Documentation
-
-Manage your shortcuts programmatically with the Creator API. Create, update, and manage your shortcuts.
-
-## Table of Contents
-
-- [Base URL](#base-url)
-- [Getting Started](#getting-started)
-- [Authentication](#authentication)
-- [API Endpoints](#api-endpoints)
-  - [Get Categories](#get-apiv1categories)
-  - [Create Shortcut](#post-apiv1shortcuts)
-  - [List Your Shortcuts](#get-apiv1shortcutsmy)
-  - [Get Shortcut Details](#get-apiv1shortcutsuuid)
-  - [Get Shortcut History](#get-apiv1shortcutsshortcut_identifierhistory)
-  - [Submit Shortcut for Review](#post-apiv1shortcutsuuidsubmit)
-  - [Update Shortcut](#post-apiv1shortcutsuuidupdate)
-  - [Upload Screenshot](#post-apiv1uploadscreenshot)
+# Shortcuty API v1 Documentation
 
 ## Base URL
 
-```
-https://shortcuty.app/api/v1
-```
-
-## Getting Started
-
-Most v1 API endpoints require API key authentication. Some endpoints (like `/api/v1/categories`) are public and do not require authentication. Get your API key from your account settings on the Shortcuty website (not available in the iOS app).
+All v1 API endpoints are prefixed with `/api/v1`
 
 ## Authentication
 
-Most API endpoints require authentication. Include your API key in the `Authorization` header for authenticated requests:
+Most v1 endpoints require API key authentication using the `Authorization` header:
 
 ```
 Authorization: Bearer <your-api-key>
 ```
 
-Public endpoints (marked as **PUBLIC** in the documentation) do not require authentication.
+API keys are UUID v4 format strings. Get your API key from the `/api/auth/api-key` endpoint (requires user authentication).
 
-To get an API key, visit your Account Settings on the Shortcuty website (https://shortcuty.app) and create one in the API Key Management section. **Note:** API keys can only be created and managed on the website, not in the iOS app.
+**Note:** The `/categories` endpoint is public and does not require authentication.
 
 ---
 
-## API Endpoints
+## Endpoints
 
-### GET /api/v1/categories
+### Categories
 
-**Authentication:** PUBLIC (No API key required)
+#### GET `/api/v1/categories`
 
-Get a list of all available shortcut categories.
+Get all available categories (public endpoint, no authentication required).
 
-#### Response
-
-**Status Code:** `200 OK`
-
-**Response Schema:**
-
-```json
-{
-  "categories": [
-    "string"
-  ]
-}
-```
-
-**Response Fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `categories` | `array[string]` | Array of category names |
-
-**Example Response:**
+**Response (200 OK):**
 
 ```json
 {
@@ -98,133 +55,650 @@ Get a list of all available shortcut categories.
 }
 ```
 
-**Example Request:**
-
-```bash
-curl -X GET "https://shortcuty.app/api/v1/categories"
-```
-
-**Notes:**
-
-- No API key required; this is a public endpoint
-- Use these category names when creating or updating shortcuts
-
 ---
 
-### POST /api/v1/shortcuts
+### Shortcuts
 
-**Authentication:** API KEY (Required)
+#### POST `/api/v1/shortcuts`
 
 Create a new shortcut (draft) with optional immediate submission.
 
-#### Request Body
+**Authentication:** Required
 
-**Content-Type:** `application/json`
-
-**Request Schema:**
+**Request Body:**
 
 ```json
 {
-  "sharing_url": "string (required)",
-  "description": "string (optional)",
-  "category": "string (optional)",
-  "requires_ios26_ai": "boolean (optional)",
-  "updater_type": "string (optional)",
-  "submit": "boolean (optional)"
+  "sharing_url": "https://www.icloud.com/shortcuts/...",
+  "description": "Shortcut description (optional, max 500,000 characters)",
+  "category": "Productivity",
+  "requires_ios26_ai": false,
+  "updater_type": "none",
+  "submit": false
 }
 ```
 
-**Request Fields:**
+**Fields:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `sharing_url` | `string` | Yes | iCloud sharing URL |
-| `description` | `string` | No | Description (max 500,000 chars) |
-| `category` | `string` | No | Category name |
-| `requires_ios26_ai` | `boolean` | No | Whether shortcut requires iOS 26 AI features |
-| `updater_type` | `string` | No | One of `"shortcuty"`, `"third_party"`, or `"none"` (default: `"none"`) |
-| `submit` | `boolean` | No | If `true`, creates and immediately submits for review |
+- `sharing_url` (required): iCloud sharing URL (must start with `https://www.icloud.com/shortcuts/` or `https://icloud.com/shortcuts/`)
+- `description` (optional): Description (max 500,000 characters)
+- `category` (optional): One of the preset categories
+- `requires_ios26_ai` (optional): Boolean, default `false`
+- `updater_type` (optional): One of `"shortcuty"`, `"third_party"`, or `"none"` (default: `"none"`)
+- `submit` (optional): If `true`, immediately submits for review; if `false`, creates as draft (default: `false`)
 
-#### Response
-
-**Status Code:** `201 Created`
-
-**Response Schema:**
+**Response (201 Created):**
 
 ```json
 {
-  "message": "string",
-  "shortcut": {
-    "uuid": "string (UUID)",
-    "name": "string",
-    "status": "string",
-    "created_at": "string (ISO 8601)",
-    "updated_at": "string (ISO 8601)",
-    "author": "string",
-    "author_profile_picture": "string (URL)",
-    "category": "string | null",
-    "description": "string",
-    "downloads": "integer",
-    "icon_filename": "string | null",
-    "likes_count": "integer",
-    "version": "string",
-    "sharing_url": "string (URL)",
-    "requires_ios26_ai": "boolean",
-    "updater_type": "string"
-  }
-}
-```
-
-**Response Fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `message` | `string` | Success message |
-| `shortcut` | `object` | Created shortcut object |
-| `shortcut.uuid` | `string` | Shortcut UUID |
-| `shortcut.name` | `string` | Shortcut name |
-| `shortcut.status` | `string` | Shortcut status (e.g., `"draft"`) |
-| `shortcut.created_at` | `string` | Creation timestamp in ISO 8601 format (UTC) |
-| `shortcut.updated_at` | `string` | Last update timestamp in ISO 8601 format (UTC) |
-| `shortcut.author` | `string` | Author name |
-| `shortcut.author_profile_picture` | `string` | Full URL to author's profile picture |
-| `shortcut.category` | `string \| null` | Category name or null |
-| `shortcut.description` | `string` | Shortcut description |
-| `shortcut.downloads` | `integer` | Number of downloads |
-| `shortcut.icon_filename` | `string \| null` | Icon filename or null |
-| `shortcut.likes_count` | `integer` | Number of likes |
-| `shortcut.version` | `string` | Version string |
-| `shortcut.sharing_url` | `string` | iCloud sharing URL |
-| `shortcut.requires_ios26_ai` | `boolean` | Whether shortcut requires iOS 26 AI features |
-| `shortcut.updater_type` | `string` | Updater type (`"shortcuty"`, `"third_party"`, or `"none"`) |
-
-**Example Response:**
-
-```json
-{
-  "message": "Draft shortcut created",
+  "message": "Draft shortcut created" | "Shortcut created and queued for review and scanning",
   "shortcut": {
     "uuid": "550e8400-e29b-41d4-a716-446655440000",
-    "name": "Untitled Shortcut",
-    "status": "draft",
-    "created_at": "2025-12-01T10:00:00Z",
-    "updated_at": "2025-12-01T10:00:00Z",
-    "author": "Example User",
-    "author_profile_picture": "https://shortcuty.app/uploads/profiles/example.png",
-    "category": null,
-    "description": "",
+    "name": "Untitled Shortcut" | "Extracted Name",
+    "description": "Shortcut description" | null,
+    "sharing_url": "https://www.icloud.com/shortcuts/...",
+    "icon_filename": "path/to/icon.png" | null,
+    "version": "1.0" | null,
+    "status": "draft" | "pending",
+    "created_at": "2025-01-15T10:30:00Z",
+    "updated_at": "2025-01-15T10:30:00Z",
+    "category": "Productivity" | null,
     "downloads": 0,
-    "icon_filename": null,
     "likes_count": 0,
-    "version": "1.0",
-    "sharing_url": "https://www.icloud.com/shortcuts/test123",
     "requires_ios26_ai": false,
-    "updater_type": "none"
+    "updater_type": "none" | "shortcuty" | "third_party",
+    "author": "username",
+    "author_profile_picture": "https://shortcuty.app/uploads/profiles/2025/12/..." | null
   }
 }
 ```
 
-**Example Request:**
+**Note:** The `name` field is extracted automatically during scanning and will initially be "Untitled Shortcut" for drafts.
+
+---
+
+#### GET `/api/v1/shortcuts/my`
+
+Get current user's shortcuts.
+
+**Authentication:** Required
+
+**Query Parameters:**
+
+- `page` (optional): Page number (default: 1)
+- `per_page` (optional): Items per page (default: 20)
+
+**Response (200 OK):**
+
+```json
+{
+  "shortcuts": [
+    {
+      "uuid": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "My Shortcut",
+      "description": "Description" | null,
+      "sharing_url": "https://www.icloud.com/shortcuts/...",
+      "icon_filename": "path/to/icon.png" | null,
+      "version": "1.0" | null,
+      "status": "draft" | "pending" | "approved" | "rejected",
+      "created_at": "2025-01-15T10:30:00Z",
+      "updated_at": "2025-01-15T10:30:00Z",
+      "category": "Productivity" | null,
+      "downloads": 0,
+      "likes_count": 0,
+      "requires_ios26_ai": false,
+      "updater_type": "none" | "shortcuty" | "third_party",
+      "author": "username",
+      "author_profile_picture": "https://shortcuty.app/uploads/profiles/2025/12/..." | null,
+      "rejection_reason": "Reason for rejection" | null
+    }
+  ],
+  "total": 10,
+  "pages": 1,
+  "current_page": 1
+}
+```
+
+---
+
+#### GET `/api/v1/shortcuts/<shortcut_identifier>`
+
+Get shortcut by UUID with comments and screenshots.
+
+**Authentication:** Required
+
+**Parameters:**
+
+- `shortcut_identifier`: Shortcut UUID
+
+**Authorization:**
+
+- Approved shortcuts: accessible to all authenticated users
+- Draft/pending/rejected shortcuts: only accessible to the author
+
+**Response (200 OK):**
+
+```json
+{
+  "shortcut": {
+    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "My Shortcut",
+    "description": "Description" | null,
+    "sharing_url": "https://www.icloud.com/shortcuts/...",
+    "icon_filename": "path/to/icon.png" | null,
+    "version": "1.0" | null,
+    "status": "draft" | "pending" | "approved" | "rejected",
+    "created_at": "2025-01-15T10:30:00Z",
+    "updated_at": "2025-01-15T10:30:00Z",
+    "category": "Productivity" | null,
+    "downloads": 0,
+    "likes_count": 5,
+    "requires_ios26_ai": false,
+    "updater_type": "none" | "shortcuty" | "third_party",
+    "author": "username",
+    "liked": true | false,
+    "author_profile_picture": "https://shortcuty.app/uploads/profiles/2025/12/..." | null
+  },
+  "comments": [
+    {
+      "id": 1,
+      "content": "Great shortcut!",
+      "created_at": "2025-01-15T10:30:00Z",
+      "user": "commenter_username",
+      "username": "commenter_username",
+      "profile_picture": "/uploads/profiles/2025/12/..." | null,
+      "is_approved": true,
+      "parent_id": null,
+      "replies": [
+        {
+          "id": 2,
+          "content": "Thanks!",
+          "created_at": "2025-01-15T11:00:00Z",
+          "user": "author_username",
+          "username": "author_username",
+          "profile_picture": "/uploads/profiles/2025/12/..." | null,
+          "is_approved": true,
+          "parent_id": 1
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "id": 1,
+      "filename": "screenshots/2025/12/abc123.png",
+      "uploaded_at": "2025-01-15T10:30:00Z",
+      "url": "https://shortcuty.app/uploads/screenshots/2025/12/abc123.png"
+    }
+  ],
+  "latest_update": {
+    "id": 1,
+    "shortcut_id": 123,
+    "new_version": "1.1",
+    "new_sharing_url": "https://www.icloud.com/shortcuts/..." | null,
+    "changelog": "What's new in this version" | null,
+    "status": "approved",
+    "rejection_reason": null,
+    "field_changes": "{\"name\":\"New Name\",\"description\":\"New Description\"}" | null,
+    "created_at": "2025-01-15T10:30:00Z",
+    "approved_at": "2025-01-15T11:00:00Z" | null
+  } | null
+}
+```
+
+**Error Responses:**
+
+- `404 Not Found`: Shortcut not found or not accessible
+  ```json
+  {
+    "error": "Shortcut not found"
+  }
+  ```
+
+---
+
+#### GET `/api/v1/shortcuts/<shortcut_identifier>/history`
+
+Get version history for a shortcut owned by the authenticated user.
+
+**Authentication:** Required
+
+**Parameters:**
+
+- `shortcut_identifier`: Shortcut UUID
+
+**Authorization:** Only the shortcut owner can view history
+
+**Response (200 OK):**
+
+```json
+{
+  "shortcut_name": "My Shortcut",
+  "shortcut_uuid": "550e8400-e29b-41d4-a716-446655440000",
+  "changelog": [
+    {
+      "version": "1.1",
+      "changelog": "What's new in this version" | null,
+      "date": "2025-01-15T10:30:00Z",
+      "status": "approved" | "pending" | "rejected",
+      "sharing_url": "https://www.icloud.com/shortcuts/..." | null,
+      "changes": {
+        "name": "New Name" | null,
+        "description": "New Description" | null,
+        "category": "Productivity" | null,
+        "requires_ios26_ai": true | null,
+        "updater_type": "shortcuty" | null,
+        "new_version": "1.1" | null
+      },
+      "rejection_reason": "Reason for rejection" | null
+    }
+  ]
+}
+```
+
+**Error Responses:**
+
+- `404 Not Found`: Shortcut not found or not owned by user
+  ```json
+  {
+    "error": "Shortcut not found"
+  }
+  ```
+
+---
+
+#### POST `/api/v1/shortcuts/<shortcut_identifier>/submit`
+
+Submit a draft shortcut for review.
+
+**Authentication:** Required
+
+**Parameters:**
+
+- `shortcut_identifier`: Shortcut UUID
+
+**Authorization:** Only the shortcut author can submit
+
+**Response (200 OK):**
+
+```json
+{
+  "message": "Shortcut queued for review and scanning"
+}
+```
+
+**Error Responses:**
+
+- `400 Bad Request`: Shortcut is not a draft or rejected shortcut
+  ```json
+  {
+    "error": "Shortcut is not a draft or rejected shortcut"
+  }
+  ```
+- `403 Forbidden`: Permission denied
+  ```json
+  {
+    "error": "Permission denied"
+  }
+  ```
+- `404 Not Found`: Shortcut not found
+  ```json
+  {
+    "error": "Shortcut not found"
+  }
+  ```
+
+---
+
+#### POST `/api/v1/shortcuts/<shortcut_identifier>/update`
+
+Unified endpoint for updating shortcuts.
+
+**Authentication:** Required
+
+**Parameters:**
+
+- `shortcut_identifier`: Shortcut UUID
+
+**Authorization:** Only the shortcut author can update
+
+**Request Body:**
+
+```json
+{
+  "name": "New name",
+  "description": "New description (max 500,000 characters)",
+  "sharing_url": "https://www.icloud.com/shortcuts/...",
+  "category": "Productivity",
+  "requires_ios26_ai": false,
+  "updater_type": "none",
+  "new_version": "1.1",
+  "changelog": "What's new in this version (max 10,000 characters, optional)"
+}
+```
+
+**Fields:**
+
+- All fields are optional, but at least one change must be provided
+- `sharing_url`: Must be a valid iCloud sharing URL
+- `category`: Must be one of the preset categories
+- `updater_type`: One of `"shortcuty"`, `"third_party"`, or `"none"`
+- `changelog`: Optional changelog text (max 10,000 characters)
+
+**Behavior:**
+
+- Draft shortcuts: Updates are applied immediately without admin review
+- Pending shortcuts (first submission): Updates modify the submission directly
+- Approved shortcuts: Creates an update record for admin review
+- Rejected shortcuts: Changes status to pending and requires manual review
+
+**Auto-approval:**
+
+- If neither `sharing_url` nor `description` changed, the update is auto-approved
+- If `sharing_url` or `description` changed, the update requires admin review and scanning
+
+**Response (200 OK or 201 Created):**
+
+```json
+{
+  "message": "Draft shortcut updated" | "Update approved automatically (no URL or description change)" | "Update queued for processing and scan" | "Update submitted for manual review (shortcut was previously rejected)",
+  "update_id": 123
+}
+```
+
+**Note:** `update_id` is only present for non-draft updates (when status is not "draft").
+
+**Error Responses:**
+
+- `400 Bad Request`: No changes provided, invalid field values, or validation errors
+  ```json
+  {
+    "error": "No changes provided"
+  }
+  ```
+  ```json
+  {
+    "error": "Description must be 500,000 characters or less"
+  }
+  ```
+  ```json
+  {
+    "error": "Changelog must be 10,000 characters or less"
+  }
+  ```
+  ```json
+  {
+    "error": "Sharing URL must be an iCloud sharing URL (https://www.icloud.com/shortcuts/...)"
+  }
+  ```
+  ```json
+  {
+    "error": "Invalid category. Must be one of: Artificial Intelligence, Education, ..."
+  }
+  ```
+  ```json
+  {
+    "error": "Invalid updater_type. Must be one of: shortcuty, third_party, none"
+  }
+  ```
+- `403 Forbidden`: Permission denied
+  ```json
+  {
+    "error": "Permission denied"
+  }
+  ```
+- `404 Not Found`: Shortcut not found
+  ```json
+  {
+    "error": "Shortcut not found"
+  }
+  ```
+- `500 Internal Server Error`: Server error
+  ```json
+  {
+    "error": "Internal server error during shortcut update"
+  }
+  ```
+
+---
+
+### Screenshots
+
+#### POST `/api/v1/upload/screenshot`
+
+Upload a screenshot for a shortcut.
+
+**Authentication:** Required
+
+**Request:**
+
+- Content-Type: `multipart/form-data`
+- `file`: Image file (JPEG, PNG, GIF)
+- `shortcut_id`: Shortcut UUID (form field)
+
+**Limits:**
+
+- Maximum 5 screenshots per shortcut
+- File must be a valid image (validated by content, not just extension)
+
+**Response (200 OK):**
+
+```json
+{
+  "screenshot": {
+    "id": 1,
+    "filename": "screenshots/2025/12/550e8400-e29b-41d4-a716-446655440000.png",
+    "uploaded_at": "2025-01-15T10:30:00Z",
+    "url": "https://shortcuty.app/uploads/screenshots/2025/12/550e8400-e29b-41d4-a716-446655440000.png"
+  }
+}
+```
+
+**Error Responses:**
+
+- `400 Bad Request`: No file provided, invalid file extension, file validation failed, or screenshot limit reached
+  ```json
+  {
+    "error": "No file provided"
+  }
+  ```
+  ```json
+  {
+    "error": "Shortcut ID required"
+  }
+  ```
+  ```json
+  {
+    "error": "Invalid file extension"
+  }
+  ```
+  ```json
+  {
+    "error": "File content validation failed"
+  }
+  ```
+  ```json
+  {
+    "error": "Maximum of 5 screenshots allowed per shortcut"
+  }
+  ```
+- `403 Forbidden`: Permission denied (not the shortcut author)
+  ```json
+  {
+    "error": "Permission denied"
+  }
+  ```
+- `404 Not Found`: Shortcut not found
+  ```json
+  {
+    "error": "Shortcut not found"
+  }
+  ```
+
+---
+
+#### DELETE `/api/v1/shortcuts/<shortcut_identifier>/screenshots/<screenshot_id>`
+
+Delete a screenshot for a shortcut.
+
+**Authentication:** Required
+
+**Parameters:**
+
+- `shortcut_identifier`: Shortcut UUID
+- `screenshot_id`: Screenshot ID (integer)
+
+**Authorization:** Only the shortcut author can delete screenshots
+
+**Response (200 OK):**
+
+```json
+{
+  "message": "Screenshot deleted successfully"
+}
+```
+
+**Error Responses:**
+
+- `403 Forbidden`: Permission denied or screenshot doesn't belong to shortcut
+  ```json
+  {
+    "error": "Permission denied"
+  }
+  ```
+  ```json
+  {
+    "error": "Screenshot does not belong to this shortcut"
+  }
+  ```
+- `404 Not Found`: Shortcut or screenshot not found
+  ```json
+  {
+    "error": "Shortcut not found"
+  }
+  ```
+  ```json
+  {
+    "error": "Screenshot not found"
+  }
+  ```
+- `500 Internal Server Error`: Failed to delete screenshot
+  ```json
+  {
+    "error": "Failed to delete screenshot"
+  }
+  ```
+
+---
+
+## Response Format
+
+### Success Responses
+
+- `200 OK`: Request successful
+- `201 Created`: Resource created successfully
+
+### Error Responses
+
+- `400 Bad Request`: Invalid request data or validation error
+- `401 Unauthorized`: Authentication required or invalid API key
+- `403 Forbidden`: Permission denied
+- `404 Not Found`: Resource not found
+- `500 Internal Server Error`: Server error
+
+### Error Response Format
+
+```json
+{
+  "error": "Error message description"
+}
+```
+
+---
+
+## Data Types and Field Descriptions
+
+### Shortcut Object
+
+- `uuid` (string): Unique identifier for the shortcut (UUID format)
+- `name` (string): Shortcut name
+- `description` (string | null): Shortcut description, can be null
+- `sharing_url` (string): iCloud sharing URL
+- `icon_filename` (string | null): Relative path to icon file, can be null
+- `version` (string | null): Version string (e.g., "1.0"), can be null
+- `status` (string): One of `"draft"`, `"pending"`, `"approved"`, `"rejected"`
+- `created_at` (string): ISO 8601 formatted datetime
+- `updated_at` (string): ISO 8601 formatted datetime
+- `category` (string | null): Category name, can be null
+- `downloads` (integer): Download count (default: 0)
+- `likes_count` (integer): Number of likes
+- `requires_ios26_ai` (boolean): Whether shortcut requires iOS 26 AI features
+- `updater_type` (string): One of `"none"`, `"shortcuty"`, `"third_party"` (default: `"none"`)
+- `author` (string): Author username
+- `liked` (boolean | null): Whether the authenticated user has liked this shortcut (only present when user_id is provided)
+- `rejection_reason` (string | null): Rejection reason, only present for rejected shortcuts when requested
+- `author_profile_picture` (string | null): Full URL to author's profile picture, can be null
+
+### Comment Object
+
+- `id` (integer): Comment ID
+- `content` (string): Comment text
+- `created_at` (string): ISO 8601 formatted datetime
+- `user` (string): Commenter username
+- `username` (string): Commenter username (alias for `user`)
+- `profile_picture` (string | null): Relative path to profile picture (e.g., "/uploads/profiles/..."), can be null
+- `is_approved` (boolean): Whether comment is approved
+- `parent_id` (integer | null): Parent comment ID for replies, null for top-level comments
+- `replies` (array): Array of comment objects (only present for top-level comments)
+
+### Screenshot Object
+
+- `id` (integer): Screenshot ID
+- `filename` (string): Relative path to screenshot file
+- `uploaded_at` (string): ISO 8601 formatted datetime
+- `url` (string): Full URL to screenshot (only in v1 API responses)
+
+### ShortcutUpdate Object
+
+- `id` (integer): Update ID
+- `shortcut_id` (integer): Shortcut ID
+- `new_version` (string | null): New version string, can be null
+- `new_sharing_url` (string | null): New sharing URL, can be null
+- `changelog` (string | null): Changelog text, can be null
+- `status` (string): One of `"pending"`, `"approved"`, `"rejected"` (default: `"pending"`)
+- `rejection_reason` (string | null): Rejection reason, can be null
+- `field_changes` (string | object | null): JSON string or object containing field changes, can be null
+- `created_at` (string): ISO 8601 formatted datetime
+- `approved_at` (string | null): ISO 8601 formatted datetime when approved, can be null
+
+### Changelog Entry Object (in history response)
+
+- `version` (string | null): Version string, can be null
+- `changelog` (string | null): Changelog text, can be null
+- `date` (string): ISO 8601 formatted datetime
+- `status` (string): One of `"approved"`, `"pending"`, `"rejected"`
+- `sharing_url` (string | null): Sharing URL for this version, can be null
+- `changes` (object): Object containing field changes (excluding sharing_url fields)
+- `rejection_reason` (string | null): Rejection reason, only present if status is "rejected"
+
+---
+
+## Notes
+
+1. UUID-only identifiers: v1 API uses UUIDs for shortcuts, not numeric IDs
+2. Full URLs: Upload URLs in responses are full URLs (e.g., `https://shortcuty.app/uploads/...`)
+3. Draft shortcuts: Can be updated immediately without admin review
+4. Auto-approval: Updates that don't change `sharing_url` or `description` are auto-approved
+5. Scanning: Shortcuts and updates with URL/description changes are queued for security scanning
+6. Status values: `draft`, `pending`, `approved`, `rejected`
+7. Categories: Must match one of the preset categories exactly (case-sensitive)
+8. Datetime format: All datetime fields use ISO 8601 format (e.g., `"2025-01-15T10:30:00Z"`)
+
+---
+
+## Example Usage
+
+### Create a Draft Shortcut
 
 ```bash
 curl -X POST https://shortcuty.app/api/v1/shortcuts \
@@ -233,529 +707,36 @@ curl -X POST https://shortcuty.app/api/v1/shortcuts \
   -d '{
     "sharing_url": "https://www.icloud.com/shortcuts/abc123",
     "description": "My awesome shortcut",
-    "category": "productivity"
+    "category": "Productivity",
+    "submit": false
   }'
 ```
 
----
-
-### GET /api/v1/shortcuts/my
-
-**Authentication:** API KEY (Required)
-
-Get paginated list of your shortcuts.
-
-#### Query Parameters
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `page` | `integer` | No | `1` | Page number |
-| `per_page` | `integer` | No | `20` | Items per page |
-
-#### Response
-
-**Status Code:** `200 OK`
-
-**Response Schema:**
-
-```json
-{
-  "shortcuts": ["array of shortcut objects"],
-  "total": "integer",
-  "pages": "integer",
-  "current_page": "integer"
-}
-```
-
-**Response Fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `shortcuts` | `array[object]` | Array of shortcut objects |
-| `total` | `integer` | Total number of shortcuts |
-| `pages` | `integer` | Total number of pages |
-| `current_page` | `integer` | Current page number |
-
-**Example Response:**
-
-```json
-{
-  "shortcuts": [
-    {
-      "uuid": "7c182d30-4520-410e-a355-2a60e62c1f30",
-      "name": "Example Shortcut",
-      "status": "pending",
-      "created_at": "2025-12-02T23:03:12Z",
-      "updated_at": "2025-12-02T23:03:30Z",
-      "author": "Example User",
-      "author_profile_picture": "https://shortcuty.app/uploads/profiles/example.png",
-      "category": "Technology",
-      "description": "Example description",
-      "downloads": 0,
-      "icon_filename": null,
-      "likes_count": 0,
-      "version": "1.0",
-      "sharing_url": "https://www.icloud.com/shortcuts/test-url",
-      "requires_ios26_ai": false,
-      "updater_type": "none",
-      "rejection_reason": null
-    }
-  ],
-  "total": 25,
-  "pages": 2,
-  "current_page": 1
-}
-```
-
-**Example Request:**
+### Submit Draft for Review
 
 ```bash
-curl -X GET "https://shortcuty.app/api/v1/shortcuts/my?page=1&per_page=20" \
+curl -X POST https://shortcuty.app/api/v1/shortcuts/UUID/submit \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
----
-
-### GET /api/v1/shortcuts/{uuid}
-
-**Authentication:** API KEY (Required)
-
-Get shortcut details by UUID, including comments, screenshots, and latest update.
-
-#### Path Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `uuid` | `string` | Yes | Shortcut UUID |
-
-#### Response
-
-**Status Code:** `200 OK`
-
-**Response Schema:**
-
-```json
-{
-  "shortcut": {
-    "uuid": "string (UUID)",
-    "name": "string",
-    "status": "string",
-    "created_at": "string (ISO 8601)",
-    "updated_at": "string (ISO 8601)",
-    "author": "string",
-    "author_profile_picture": "string (URL)",
-    "category": "string",
-    "description": "string",
-    "downloads": "integer",
-    "icon_filename": "string | null",
-    "liked": "boolean",
-    "likes_count": "integer",
-    "version": "string",
-    "sharing_url": "string (URL)",
-    "requires_ios26_ai": "boolean",
-    "updater_type": "string",
-    "rejection_reason": "string | null"
-  },
-  "comments": ["array"],
-  "screenshots": ["array"],
-  "latest_update": "object | null"
-}
-```
-
-**Response Fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `shortcut` | `object` | Shortcut object |
-| `shortcut.uuid` | `string` | Shortcut UUID |
-| `shortcut.name` | `string` | Shortcut name |
-| `shortcut.status` | `string` | Shortcut status (e.g., `"draft"`, `"pending"`, `"approved"`, `"rejected"`) |
-| `shortcut.created_at` | `string` | Creation timestamp in ISO 8601 format (UTC) |
-| `shortcut.updated_at` | `string` | Last update timestamp in ISO 8601 format (UTC) |
-| `shortcut.author` | `string` | Author name |
-| `shortcut.author_profile_picture` | `string` | Full URL to author's profile picture |
-| `shortcut.category` | `string` | Category name |
-| `shortcut.description` | `string` | Shortcut description |
-| `shortcut.downloads` | `integer` | Number of downloads |
-| `shortcut.icon_filename` | `string \| null` | Icon filename or null |
-| `shortcut.liked` | `boolean` | Whether the current user has liked this shortcut |
-| `shortcut.likes_count` | `integer` | Number of likes |
-| `shortcut.version` | `string` | Version string |
-| `shortcut.sharing_url` | `string` | iCloud sharing URL |
-| `shortcut.requires_ios26_ai` | `boolean` | Whether shortcut requires iOS 26 AI features |
-| `shortcut.updater_type` | `string` | Updater type (`"shortcuty"`, `"third_party"`, or `"none"`) |
-| `shortcut.rejection_reason` | `string \| null` | Rejection reason if status is `"rejected"`, otherwise null |
-| `comments` | `array` | Array of comments |
-| `screenshots` | `array` | Array of screenshots |
-| `latest_update` | `object \| null` | Latest update object or null |
-
-**Example Response:**
-
-```json
-{
-  "shortcut": {
-    "uuid": "550e8400-e29b-41d4-a716-446655440000",
-    "name": "Example Shortcut",
-    "status": "draft",
-    "created_at": "2025-12-01T10:00:00Z",
-    "updated_at": "2025-12-01T10:00:00Z",
-    "author": "Example User",
-    "author_profile_picture": "https://shortcuty.app/uploads/profiles/example.png",
-    "category": "Artificial Intelligence",
-    "description": "This is an example shortcut description that demonstrates the response structure...",
-    "downloads": 0,
-    "icon_filename": null,
-    "liked": false,
-    "likes_count": 0,
-    "version": "1.0",
-    "sharing_url": "https://www.icloud.com/shortcuts/550e8400e4a646aea502f3cf06a97e44",
-    "requires_ios26_ai": false,
-    "updater_type": "none",
-    "rejection_reason": null
-  },
-  "comments": [],
-  "screenshots": [],
-  "latest_update": null
-}
-```
-
-**Example Request:**
+### Update Shortcut
 
 ```bash
-curl -X GET "https://shortcuty.app/api/v1/shortcuts/550e8400-e29b-41d4-a716-446655440000" \
-  -H "Authorization: Bearer YOUR_API_KEY"
-```
-
-**Notes:**
-
-- Users can only view their own draft/pending/rejected shortcuts
-
----
-
-### GET /api/v1/shortcuts/{shortcut_identifier}/history
-
-**Authentication:** API KEY (Required)
-
-Get version history for a shortcut, including changelogs, status changes, and field updates.
-
-#### Path Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `shortcut_identifier` | `string` | Yes | Shortcut UUID or ID |
-
-#### Response
-
-**Status Code:** `200 OK`
-
-**Response Schema:**
-
-```json
-{
-  "changelog": [
-    {
-      "version": "string",
-      "changelog": "string",
-      "date": "string (ISO 8601)",
-      "status": "string",
-      "sharing_url": "string (URL)",
-      "changes": {
-        "name": "string",
-        "new_version": "string",
-        "old_sharing_url": "string (URL)"
-      }
-    }
-  ],
-  "shortcut_name": "string",
-  "shortcut_uuid": "string (UUID)"
-}
-```
-
-**Response Fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `changelog` | `array[object]` | Array of history entries |
-| `changelog[].version` | `string` | Version string (e.g., `"2.0"`) |
-| `changelog[].changelog` | `string` | Changelog text for this version |
-| `changelog[].date` | `string` | Timestamp in ISO 8601 format (UTC) |
-| `changelog[].status` | `string` | Status at this point in history (e.g., `"approved"`, `"pending"`, `"draft"`) |
-| `changelog[].sharing_url` | `string` | iCloud sharing URL for this version (convenience field) |
-| `changelog[].changes` | `object` | Object containing field changes |
-| `changelog[].changes.name` | `string` | Updated name (if changed) |
-| `changelog[].changes.new_version` | `string` | New version string (if changed) |
-| `changelog[].changes.old_sharing_url` | `string` | Previous sharing URL |
-| `shortcut_name` | `string` | The name of the shortcut |
-| `shortcut_uuid` | `string` | The UUID of the shortcut |
-
-**Example Response:**
-
-```json
-{
-  "changelog": [
-    {
-      "version": "2.0",
-      "changelog": "Updated version",
-      "date": "2025-12-01T10:00:00Z",
-      "status": "approved",
-      "sharing_url": "https://www.icloud.com/shortcuts/...",
-      "changes": {
-        "name": "Updated Name",
-        "new_version": "2.0",
-        "old_sharing_url": "https://www.icloud.com/shortcuts/old-url"
-      }
-    }
-  ],
-  "shortcut_name": "Untitled Shortcut",
-  "shortcut_uuid": "a127b74e-9cac-4193-80d4-97f1066eb5f2"
-}
-```
-
-**Example Request:**
-
-```bash
-curl -X GET "https://shortcuty.app/api/v1/shortcuts/550e8400-e29b-41d4-a716-446655440000/history" \
-  -H "Authorization: Bearer YOUR_API_KEY"
-```
-
-**Notes:**
-
-- The response is an object with a `changelog` array containing history entries, along with `shortcut_name` and `shortcut_uuid` metadata
-- In the `changes` object within each history entry, the field `old_sharing_url` represents the previous sharing URL
-- Users can only view history for their own shortcuts
-
----
-
-### POST /api/v1/shortcuts/{uuid}/submit
-
-**Authentication:** API KEY (Required)
-
-Submit a draft or rejected shortcut for review.
-
-#### Path Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `uuid` | `string` | Yes | Shortcut UUID |
-
-#### Request Body
-
-No body required.
-
-#### Response
-
-**Status Code:** `200 OK`
-
-**Response Schema:**
-
-```json
-{
-  "message": "string"
-}
-```
-
-**Response Fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `message` | `string` | Success message |
-
-**Example Response:**
-
-```json
-{
-  "message": "Shortcut queued for review and scanning"
-}
-```
-
-**Example Request:**
-
-```bash
-curl -X POST "https://shortcuty.app/api/v1/shortcuts/550e8400-e29b-41d4-a716-446655440000/submit" \
-  -H "Authorization: Bearer YOUR_API_KEY"
-```
-
----
-
-### POST /api/v1/shortcuts/{uuid}/update
-
-**Authentication:** API KEY (Required)
-
-Update an existing shortcut. For drafts, updates are applied immediately. For approved shortcuts, creates an update record for admin review.
-
-#### Path Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `uuid` | `string` | Yes | Shortcut UUID |
-
-#### Request Body
-
-**Content-Type:** `application/json`
-
-**Request Schema:**
-
-```json
-{
-  "name": "string (optional)",
-  "description": "string (optional)",
-  "sharing_url": "string (optional)",
-  "category": "string (optional)",
-  "requires_ios26_ai": "boolean (optional)",
-  "updater_type": "string (optional)",
-  "new_version": "string (optional)",
-  "new_sharing_url": "string (optional)",
-  "changelog": "string (optional)"
-}
-```
-
-**Request Fields:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | `string` | No | Shortcut name |
-| `description` | `string` | No | Description (max 500,000 chars) |
-| `sharing_url` | `string` | No | New sharing URL (must be iCloud URL) |
-| `category` | `string` | No | Category name |
-| `requires_ios26_ai` | `boolean` | No | Whether shortcut requires iOS 26 AI features |
-| `updater_type` | `string` | No | One of `"shortcuty"`, `"third_party"`, or `"none"` |
-| `new_version` | `string` | No | Version string (e.g., `"2.0"`) |
-| `new_sharing_url` | `string` | No | Sharing URL for new version (required if `new_version` provided) |
-| `changelog` | `string` | No | Changelog text (max 10,000 chars) |
-
-#### Response
-
-**Status Code:** `200 OK` (Draft - Immediate Update) or `201 Created` (Update Submitted for Review)
-
-**Response Schema (Draft Update):**
-
-```json
-{
-  "message": "string"
-}
-```
-
-**Response Schema (Update Submitted):**
-
-```json
-{
-  "message": "string",
-  "update_id": "integer"
-}
-```
-
-**Response Fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `message` | `string` | Success message |
-| `update_id` | `integer` | Update ID (only present when update is submitted for review) |
-
-**Example Response (Draft - Immediate Update):**
-
-```json
-{
-  "message": "Draft shortcut updated"
-}
-```
-
-**Example Response (Update Submitted for Review):**
-
-```json
-{
-  "message": "Update queued for processing and scan",
-  "update_id": 123
-}
-```
-
-**Example Request:**
-
-```bash
-curl -X POST "https://shortcuty.app/api/v1/shortcuts/550e8400-e29b-41d4-a716-446655440000/update" \
+curl -X POST https://shortcuty.app/api/v1/shortcuts/UUID/update \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Updated Shortcut Name",
-    "description": "New description"
+    "new_version": "1.1",
+    "changelog": "Added new features",
+    "description": "Updated description"
   }'
 ```
 
-**Notes:**
-
-- Draft shortcuts are updated immediately
-- Approved shortcuts create update records for admin review
-- If URL or description changes, update requires scanning and admin review
-
----
-
-### POST /api/v1/upload/screenshot
-
-**Authentication:** API KEY (Required)
-
-Upload a screenshot for a shortcut.
-
-#### Request Body
-
-**Content-Type:** `multipart/form-data`
-
-**Form Data:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `file` | `file` | Yes | Image file (PNG, JPG, JPEG, GIF, SVG, WEBP) |
-| `shortcut_id` | `string` | Yes | Shortcut UUID |
-
-#### Response
-
-**Status Code:** `200 OK`
-
-**Response Schema:**
-
-```json
-{
-  "screenshot": {
-    "id": "integer",
-    "filename": "string",
-    "url": "string (URL)",
-    "uploaded_at": "string (ISO 8601)"
-  }
-}
-```
-
-**Response Fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `screenshot` | `object` | Screenshot object |
-| `screenshot.id` | `integer` | Screenshot ID |
-| `screenshot.filename` | `string` | Screenshot filename |
-| `screenshot.url` | `string` | Full URL to the screenshot |
-| `screenshot.uploaded_at` | `string` | Upload timestamp in ISO 8601 format (UTC) |
-
-**Example Response:**
-
-```json
-{
-  "screenshot": {
-    "id": 789,
-    "filename": "security/2025/12/3ffd4817-bff5-4cdd-b6a2-7be82a61441c.png",
-    "url": "https://shortcuty.app/uploads/security/2025/12/3ffd4817-bff5-4cdd-b6a2-7be82a61441c.png",
-    "uploaded_at": "2025-12-01T10:30:00Z"
-  }
-}
-```
-
-**Example Request:**
+### Upload Screenshot
 
 ```bash
-curl -X POST "https://shortcuty.app/api/v1/upload/screenshot" \
+curl -X POST https://shortcuty.app/api/v1/upload/screenshot \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -F "file=@screenshot.png" \
-  -F "shortcut_id=550e8400-e29b-41d4-a716-446655440000"
+  -F "shortcut_id=UUID"
 ```
-
-**Notes:**
-
-- Only the shortcut author can upload screenshots
-- File content is validated for security
-- Supported formats: PNG, JPG, JPEG, GIF, SVG, WEBP
