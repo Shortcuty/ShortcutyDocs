@@ -615,18 +615,6 @@ Delete a screenshot for a shortcut.
 - `rejection_reason` (string | null): Rejection reason, only present for rejected shortcuts when requested
 - `author_profile_picture` (string | null): Full URL to author's profile picture, can be null
 
-### Comment Object
-
-- `id` (integer): Comment ID
-- `content` (string): Comment text
-- `created_at` (string): ISO 8601 formatted datetime
-- `user` (string): Commenter username
-- `username` (string): Commenter username (alias for `user`)
-- `profile_picture` (string | null): Relative path to profile picture (e.g., "/uploads/profiles/..."), can be null
-- `is_approved` (boolean): Whether comment is approved
-- `parent_id` (integer | null): Parent comment ID for replies, null for top-level comments
-- `replies` (array): Array of comment objects (only present for top-level comments)
-
 ### Screenshot Object
 
 - `id` (integer): Screenshot ID
