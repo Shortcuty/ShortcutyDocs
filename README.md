@@ -163,7 +163,7 @@ Get current user's shortcuts.
 
 #### GET `/api/v1/shortcuts/<shortcut_identifier>`
 
-Get shortcut by UUID with comments and screenshots.
+Get shortcut by UUID with screenshots.
 
 **Authentication:** Required
 
@@ -181,68 +181,44 @@ Get shortcut by UUID with comments and screenshots.
 ```json
 {
   "shortcut": {
-    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "uuid": "123e4567-e89b-12d3-a456-426614174000",
     "name": "My Shortcut",
-    "description": "Description" | null,
+    "description": "Shortcut description",
     "sharing_url": "https://www.icloud.com/shortcuts/...",
-    "icon_filename": "path/to/icon.png" | null,
-    "version": "1.0" | null,
-    "status": "draft" | "pending" | "approved" | "rejected",
-    "created_at": "2025-01-15T10:30:00Z",
-    "updated_at": "2025-01-15T10:30:00Z",
-    "category": "Productivity" | null,
-    "downloads": 0,
-    "likes_count": 5,
+    "author_id": 1,
+    "author_username": "username",
+    "author_profile_picture": "https://example.com/uploads/profile.jpg",
+    "category": "productivity",
+    "icon_filename": "icon.png",
+    "status": "approved",
+    "version": "1.0",
     "requires_ios26_ai": false,
-    "updater_type": "none" | "shortcuty" | "third_party",
-    "author": "username",
-    "liked": true | false,
-    "author_profile_picture": "https://shortcuty.app/uploads/profiles/2025/12/..." | null
+    "updater_type": "shortcuty",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
   },
-  "comments": [
-    {
-      "id": 1,
-      "content": "Great shortcut!",
-      "created_at": "2025-01-15T10:30:00Z",
-      "user": "commenter_username",
-      "username": "commenter_username",
-      "profile_picture": "/uploads/profiles/2025/12/..." | null,
-      "is_approved": true,
-      "parent_id": null,
-      "replies": [
-        {
-          "id": 2,
-          "content": "Thanks!",
-          "created_at": "2025-01-15T11:00:00Z",
-          "user": "author_username",
-          "username": "author_username",
-          "profile_picture": "/uploads/profiles/2025/12/..." | null,
-          "is_approved": true,
-          "parent_id": 1
-        }
-      ]
-    }
-  ],
   "screenshots": [
     {
       "id": 1,
-      "filename": "screenshots/2025/12/abc123.png",
-      "uploaded_at": "2025-01-15T10:30:00Z",
-      "url": "https://shortcuty.app/uploads/screenshots/2025/12/abc123.png"
+      "filename": "screenshot1.png",
+      "url": "https://example.com/uploads/screenshots/screenshot1.png",
+      "order": 1
+    },
+    {
+      "id": 2,
+      "filename": "screenshot2.png",
+      "url": "https://example.com/uploads/screenshots/screenshot2.png",
+      "order": 2
     }
   ],
   "latest_update": {
     "id": 1,
-    "shortcut_id": 123,
+    "shortcut_id": 1,
+    "changelog": "Updated version 1.1",
     "new_version": "1.1",
-    "new_sharing_url": "https://www.icloud.com/shortcuts/..." | null,
-    "changelog": "What's new in this version" | null,
     "status": "approved",
-    "rejection_reason": null,
-    "field_changes": "{\"name\":\"New Name\",\"description\":\"New Description\"}" | null,
-    "created_at": "2025-01-15T10:30:00Z",
-    "approved_at": "2025-01-15T11:00:00Z" | null
-  } | null
+    "approved_at": "2024-01-15T00:00:00Z"
+  }
 }
 ```
 
@@ -299,11 +275,11 @@ Get version history for a shortcut owned by the authenticated user.
 **Error Responses:**
 
 - `404 Not Found`: Shortcut not found or not owned by user
-  ```json
-  {
+```json
+{
     "error": "Shortcut not found"
-  }
-  ```
+}
+```
 
 ---
 
@@ -346,7 +322,7 @@ Submit a draft shortcut for review.
   {
     "error": "Shortcut not found"
   }
-  ```
+```
 
 ---
 
@@ -575,8 +551,8 @@ Delete a screenshot for a shortcut.
   ```json
   {
     "error": "Shortcut not found"
-  }
-  ```
+}
+```
   ```json
   {
     "error": "Screenshot not found"
