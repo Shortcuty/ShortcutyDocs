@@ -317,7 +317,6 @@ Unified endpoint for updating shortcuts.
 
 ```json
 {
-  "name": "New name",
   "description": "New description (max 500,000 characters)",
   "sharing_url": "https://www.icloud.com/shortcuts/...",
   "category": "Productivity",
