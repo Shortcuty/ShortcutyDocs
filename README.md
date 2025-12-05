@@ -30,6 +30,8 @@ Shortcuts follow a simple submission flow:
 
 **Base URL:** `https://shortcuty.app/api/v1`
 
+> **💡 Using the CLI?** Check out the [Shortcuty CLI](https://github.com/Shortcuty/Shortcuty-CLI) for a command-line interface to interact with the API. It provides a convenient way to manage shortcuts without writing HTTP requests.
+
 All API requests require authentication using a Bearer token. You can obtain your API key from [browse.shortcuty.app](https://browse.shortcuty.app) in your account settings. Include your API key in the `Authorization` header for every request. Once authenticated, you can start creating and managing shortcuts using the endpoints documented below.
 
 
