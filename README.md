@@ -6,6 +6,8 @@
 
 Welcome to the Shortcuty V1 API documentation. This API provides developers with programmatic access to manage iOS Shortcuts, enabling you to create, update, submit, and track shortcuts through their lifecycle.
 
+The v1 API is for developers managing shortcuts. Responses include only essential fields, and requests are validated.
+
 ### What You Can Do
 
 With the V1 API, you can:
@@ -30,13 +32,13 @@ Shortcuts follow a simple submission flow:
 
 **Base URL:** `https://shortcuty.app/api/v1`
 
-All API requests require authentication using a Bearer token. You can obtain your API key from [browse.shortcuty.app](https://browse.shortcuty.app) in your account settings. Include your API key in the `Authorization` header for every request. Once authenticated, you can start creating and managing shortcuts using the endpoints documented below.
+All API requests require authentication using a Bearer token. You can obtain your API key from [browse.shortcuty.app](https://browse.shortcuty.app) in your account settings, or from `/api/auth/api-key` (requires session authentication). Include your API key in the `Authorization` header for every request. Once authenticated, you can start creating and managing shortcuts using the endpoints documented below.
 
 
 
 ## Authentication
 
-All endpoints require API key authentication:
+Most endpoints require API key authentication:
 
 ```
 
@@ -46,7 +48,89 @@ Authorization: Bearer <your_api_key>
 
 
 
-## Endpoints
+Get your API key from `/api/auth/api-key` (requires session authentication).
+
+
+
+---
+
+
+
+## Categories
+
+
+
+### Get Categories
+
+**GET** `/api/v1/categories`
+
+
+
+Returns all available categories. Public endpoint (no authentication required).
+
+
+
+**Response (200 OK):**
+
+```json
+
+{
+
+  "categories": [
+
+    "Artificial Intelligence",
+
+    "Education",
+
+    "Entertainment",
+
+    "Finance",
+
+    "Food & Dining",
+
+    "Gaming",
+
+    "Health & Fitness",
+
+    "Music",
+
+    "News",
+
+    "Photography",
+
+    "Productivity",
+
+    "Shopping",
+
+    "Shortcut Extension",
+
+    "Sideloading",
+
+    "Social Media",
+
+    "Sports",
+
+    "Technology",
+
+    "Travel",
+
+    "Utilities",
+
+    "Weather"
+
+  ]
+
+}
+
+```
+
+
+
+---
+
+
+
+## Shortcuts
 
 
 
@@ -121,17 +205,6 @@ Creates a new shortcut (draft or submitted).
 }
 
 ```
-
-
-
-**Validation:**
-
-- `sharing_url` must be a valid iCloud sharing URL
-
-- `category` must be one of the preset categories
-
-- `name` is read-only (extracted from shortcut directly)
-
 
 
 
@@ -261,7 +334,6 @@ Returns a single shortcut by UUID.
 
 
 
-
 ---
 
 
@@ -272,7 +344,7 @@ Returns a single shortcut by UUID.
 
 
 
-Updates a shortcut. Drafts are updated immediately; approved shortcuts require security review.
+Updates a shortcut. Drafts are updated immediately; others require admin review.
 
 
 
@@ -316,12 +388,6 @@ Updates a shortcut. Drafts are updated immediately; approved shortcuts require s
 
 
 
-**Validation:**
-
-- `name` is read-only (cannot be set)
-
-- `version` must be provided
-
 ---
 
 
@@ -360,7 +426,7 @@ Submits a draft shortcut for review.
 
 
 
-Returns version history for a shortcut.
+Returns version history for a shortcut (owner only).
 
 
 
@@ -408,56 +474,161 @@ Returns version history for a shortcut.
 
 
 
-## Response Fields
+## Screenshots
 
 
 
-All shortcut responses include these fields:
+### Upload Screenshot
+
+**POST** `/api/v1/upload/screenshot`
 
 
 
-| Field | Type | Description |
+Uploads a screenshot for a shortcut.
 
-|-------|------|-------------|
 
-| `uuid` | string | Unique identifier |
 
-| `name` | string | Shortcut name (read-only, server-scanned) |
+**Content-Type:** `multipart/form-data`
 
-| `description` | string\|null | Description |
 
-| `sharing_url` | string | iCloud sharing URL |
 
-| `version` | string\|null | Version number |
+**Form Data:**
 
-| `status` | string | `draft` \| `pending` \| `approved` \| `rejected` |
+- `file` (required): Image file (PNG, JPEG, GIF)
 
-| `category` | string\|null | Category name |
+- `shortcut_id` (required): Shortcut UUID
 
-| `created_at` | string\|null | ISO 8601 timestamp |
 
-| `updated_at` | string\|null | ISO 8601 timestamp |
 
-| `requires_ios26_ai` | boolean | iOS 26 AI requirement flag |
+**Limits:**
 
-| `updater_type` | string | `shortcuty` \| `third_party` \| `none` |
+- Maximum 5 screenshots per shortcut
 
-| `rejection_reason` | string | Only present if `status` is `"rejected"` |
+- Valid file extensions: `.png`, `.jpg`, `.jpeg`, `.gif`
+
+- File content is validated
+
+
+
+**Response (200 OK):**
+
+```json
+
+{
+
+  "screenshot": {
+
+    "id": 123,
+
+    "shortcut_id": 456,
+
+    "filename": "screenshots/2025/12/uuid.png",
+
+    "url": "https://shortcuty.app/uploads/screenshots/2025/12/uuid.png",
+
+    "order": 0,
+
+    "created_at": "2024-01-15T10:30:00Z"
+
+  }
+
+}
+
+```
+
 
 
 ---
 
 
 
-## Validation Rules
+### Delete Screenshot
+
+**DELETE** `/api/v1/shortcuts/<uuid>/screenshots/<screenshot_id>`
 
 
 
-### Field Naming
+Deletes a screenshot for a shortcut.
 
-- Use `auto_submit`
 
-- Use `version`
+
+**Response (200 OK):**
+
+```json
+
+{
+
+  "message": "Screenshot deleted successfully"
+
+}
+
+```
+
+
+
+---
+
+
+
+## Response Fields
+
+
+
+### Shortcut Object
+
+```json
+
+{
+
+  "uuid": "string",
+
+  "name": "string",
+
+  "description": "string | null",
+
+  "sharing_url": "string",
+
+  "version": "string | null",
+
+  "status": "draft | pending | approved | rejected",
+
+  "category": "string | null",
+
+  "created_at": "string | null (ISO 8601)",
+
+  "updated_at": "string | null (ISO 8601)",
+
+  "requires_ios26_ai": "boolean",
+
+  "updater_type": "shortcuty | third_party | none",
+
+  "rejection_reason": "string (only if status is 'rejected')"
+
+}
+
+```
+
+
+
+---
+
+
+
+## Validation
+
+
+
+### Read-Only Fields
+
+These fields cannot be set in requests:
+
+- `name`, `id`, `uuid`, `status`
+
+- `created_at`, `updated_at`
+
+- `downloads`, `likes_count`, `liked`
+
+- `author`, `author_profile_picture`, `icon_filename`
 
 
 
@@ -466,11 +637,36 @@ All shortcut responses include these fields:
 
 
 **400 Bad Request:**
+
+```json
+
+{
+
+  "error": "Field 'name' is read-only and cannot be set"
+
+}
+
+```
+
+
+
 ```json
 
 {
 
   "error": "Unknown field(s): submit. Allowed fields: auto_submit, category, description, requires_ios26_ai, sharing_url, updater_type"
+
+}
+
+```
+
+
+
+```json
+
+{
+
+  "error": "Sharing URL must be an iCloud sharing URL (https://www.icloud.com/shortcuts/...)"
 
 }
 
@@ -485,6 +681,20 @@ All shortcut responses include these fields:
 {
 
   "error": "Invalid API key"
+
+}
+
+```
+
+
+
+**403 Forbidden:**
+
+```json
+
+{
+
+  "error": "Permission denied"
 
 }
 
@@ -510,50 +720,22 @@ All shortcut responses include these fields:
 
 
 
-## Categories
+## Notes
 
 
 
-Valid categories (case-sensitive):
+1. All shortcut identifiers use UUID format
 
-- Artificial Intelligence
+2. `name` is extracted by the server during scanning and cannot be set
 
-- Education
+3. Timestamps are in ISO 8601 format with UTC timezone (Z suffix)
 
-- Entertainment
+4. Draft shortcuts can be updated immediately; others require admin review
 
-- Finance
+5. Maximum 5 screenshots per shortcut
 
-- Food & Dining
+6. File uploads are validated for content and extension
 
-- Gaming
+7. `sharing_url` must be a valid iCloud sharing URL
 
-- Health & Fitness
-
-- Music
-
-- News
-
-- Photography
-
-- Productivity
-
-- Shopping
-
-- Shortcut Extension
-
-- Sideloading
-
-- Social Media
-
-- Sports
-
-- Technology
-
-- Travel
-
-- Utilities
-
-- Weather
-
----
+8. `category` must be one of the preset categories (case-sensitive)
