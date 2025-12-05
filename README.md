@@ -28,6 +28,8 @@ Shortcuts follow a simple submission flow:
 
 ### Getting Started
 
+**Base URL:** `https://shortcuty.app/api/v1`
+
 All API requests require authentication using a Bearer token. You can obtain your API key from [browse.shortcuty.app](https://browse.shortcuty.app) in your account settings. Include your API key in the `Authorization` header for every request. Once authenticated, you can start creating and managing shortcuts using the endpoints documented below.
 
 
