@@ -30,7 +30,7 @@ Shortcuts follow a simple submission flow:
 
 **Base URL:** `https://shortcuty.app/api/v1`
 
-All API requests require authentication using a Bearer token. You can obtain your API key from [browse.shortcuty.app](https://browse.shortcuty.app) in your account settings, or from `/api/auth/api-key` (requires session authentication). Include your API key in the `Authorization` header for every request. Once authenticated, you can start creating and managing shortcuts using the endpoints documented below.
+All API requests require authentication using a Bearer token. You can obtain your API key from [browse.shortcuty.app](https://browse.shortcuty.app) in your account settings. Include your API key in the `Authorization` header for every request. Once authenticated, you can start creating and managing shortcuts using the endpoints documented below.
 
 
 
@@ -43,10 +43,6 @@ Most endpoints require API key authentication:
 Authorization: Bearer <your_api_key>
 
 ```
-
-
-
-Get your API key from `/api/auth/api-key` (requires session authentication).
 
 
 
