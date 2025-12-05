@@ -609,25 +609,6 @@ Deletes a screenshot for a shortcut.
 ---
 
 
-
-## Validation
-
-
-
-### Read-Only Fields
-
-These fields cannot be set in requests:
-
-- `name`, `id`, `uuid`, `status`
-
-- `created_at`, `updated_at`
-
-- `downloads`, `likes_count`, `liked`
-
-- `author`, `author_profile_picture`, `icon_filename`
-
-
-
 ### Error Responses
 
 
