@@ -717,25 +717,3 @@ These fields cannot be set in requests:
 
 
 ---
-
-
-
-## Notes
-
-
-
-1. All shortcut identifiers use UUID format
-
-2. `name` is extracted by the server during scanning and cannot be set
-
-3. Timestamps are in ISO 8601 format with UTC timezone (Z suffix)
-
-4. Draft shortcuts can be updated immediately; others require admin review
-
-5. Maximum 5 screenshots per shortcut
-
-6. File uploads are validated for content and extension
-
-7. `sharing_url` must be a valid iCloud sharing URL
-
-8. `category` must be one of the preset categories (case-sensitive)
