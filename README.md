@@ -6,8 +6,6 @@
 
 Welcome to the Shortcuty V1 API documentation. This API provides developers with programmatic access to manage iOS Shortcuts, enabling you to create, update, submit, and track shortcuts through their lifecycle.
 
-The v1 API is for developers managing shortcuts.
-
 ### What You Can Do
 
 With the V1 API, you can:
