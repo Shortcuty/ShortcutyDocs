@@ -366,7 +366,7 @@ Submits an owned draft or rejected shortcut for review. No request body is requi
 
 **GET** `/api/v1/shortcuts/<uuid>/history`
 
-Returns version history, including pending and rejected updates, for the shortcut owner only. A key belonging to another account cannot read this history, including an admin account's key. Non-owners receive `404`. Rejected entries can include `rejection_reason`.
+Returns version history, including pending and rejected updates, for the shortcut owner only. A key belonging to another account cannot read this history, including an admin account's key. Non-owners receive `404`.
 
 An initial submission is tracked on the shortcut itself; check `/shortcuts/my` or `/shortcuts/<uuid>` for its status. A pending update to an approved shortcut appears here while the list and detail endpoints continue to show the approved base version.
 
