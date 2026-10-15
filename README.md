@@ -1,30 +1,28 @@
 # V1 API Documentation
 
-Create shortcut drafts, submit them for review, publish updates, and check their status. Submitted shortcuts and updates can require scanning and review before approval.
+Create shortcut drafts, submit them for review, release updates, and check their status.
 
 ## Getting started
 
 **Base URL:** `https://shortcuty.app/api/v1`
 
-Prefer a command line interface? Use the [Shortcuty CLI](https://github.com/Shortcuty/Shortcuty-CLI).
-
-Get your API key in your account settings at [browse.shortcuty.app](https://browse.shortcuty.app). Use it in the `Authorization` header as shown below.
+[Quickstart](#quickstart-create-a-draft-then-submit-it) · [Apple Shortcuts](#apple-shortcuts-setup) · [Endpoints](#endpoints) · [Fields](#shortcut-fields) · [Troubleshooting](#errors-and-retries)
 
 ## Authentication
 
-All shortcut and screenshot endpoints below require an API key. [Get Categories](#get-categories) is public:
+Get an API key from your account settings at [browse.shortcuty.app](https://browse.shortcuty.app). Shortcut and screenshot endpoints require this header:
 
-```
-Authorization: Bearer <your_api_key>
+```http
+Authorization: Bearer YOUR_API_KEY
 ```
 
----
+Only [Get Categories](#get-categories) is public. The [Shortcuty CLI](https://github.com/Shortcuty/Shortcuty-CLI) is also available.
 
 ## Quickstart: create a draft, then submit it
 
-Replace every `YOUR_API_KEY` and `REPLACE_WITH_...` placeholder with your own value. The iCloud share ID is part of the iCloud link; the Shortcuty UUID comes from the API response.
+Replace the placeholders below with your own values.
 
-**1. Create a draft.** Only `sharing_url` is required; `auto_submit` defaults to `false`.
+### 1. Create a draft
 
 ```sh
 curl --request POST 'https://shortcuty.app/api/v1/shortcuts' \
@@ -33,467 +31,356 @@ curl --request POST 'https://shortcuty.app/api/v1/shortcuts' \
   --data '{"sharing_url":"https://www.icloud.com/shortcuts/REPLACE_WITH_ICLOUD_SHARE_ID"}'
 ```
 
-A successful `201` response contains `shortcut.uuid` and `shortcut.status`. Save that UUID. The shortcut is a draft and is not published. [Update the draft](#update-shortcut) if needed, or inspect it with **GET** `/api/v1/shortcuts/<uuid>` using the same Authorization header.
+Save `shortcut.uuid` from the `201` response. This is the **Shortcuty UUID**, which is different from the ID in the iCloud link.
 
-**2. Submit when ready.** This request has no body.
+### 2. Submit the draft
 
 ```sh
 curl --request POST 'https://shortcuty.app/api/v1/shortcuts/REPLACE_WITH_SHORTCUT_UUID/submit' \
   --header 'Authorization: Bearer YOUR_API_KEY'
 ```
 
-`200` means submitted for review and scanning; `202` means submitted with scan admission deferred for automatic recovery. Neither means approved. To submit at creation instead, set `auto_submit` to `true` in the create request.
+This request has no body. Submission starts review and scanning; it does not mean approval.
 
-**3. Check the result.** Use **GET** `/api/v1/shortcuts/my` or **GET** `/api/v1/shortcuts/<uuid>` to see an initial submission's status. For later updates, use the owner-only **GET** `/api/v1/shortcuts/<uuid>/history` to see pending, approved, and rejected versions. All these requests need the owner's API key.
+### 3. Check its status
 
----
+Use **GET** `/shortcuts/<uuid>` with the same Authorization header. The shortcut's `status` shows the result. For later version updates, use [Get Shortcut History](#get-shortcut-history).
 
 ## Request body formats
 
-The following endpoints accept the same field names and validation rules in either JSON or Form bodies:
+[Create Shortcut](#create-shortcut) and [Update Shortcut](#update-shortcut) support these formats with the same [field names](#shortcut-fields):
 
-- **POST** `/api/v1/shortcuts`
-- **POST** `/api/v1/shortcuts/<uuid>/update`
-
-| Format | Content-Type | Values |
+| Format | Content-Type | Client option |
 |---|---|---|
-| JSON | `application/json` | One JSON object. Text fields must be strings, including `version`. Boolean fields use JSON `true` or `false`. |
-| URL-encoded Form | `application/x-www-form-urlencoded` | Text fields. Boolean fields use the text `true` or `false`. |
-| Multipart Form | `multipart/form-data` | Text fields. Boolean fields use the text `true` or `false`. Let the client generate the multipart boundary. |
+| JSON | `application/json` | JSON object / Shortcuts **JSON** |
+| URL-encoded Form | `application/x-www-form-urlencoded` | curl `--data-urlencode` |
+| Multipart Form | `multipart/form-data` | curl `--form-string` / Shortcuts **Form** |
 
-Choose one body format per request. Send a nonempty body and use each field name once, including in JSON objects. Do not wrap the fields inside a `data` or `shortcut` object. `sharing_url`, `version`, and `changelog` are the canonical update fields; `link` and `changes` are not accepted aliases. Creating a shortcut uses `auto_submit`, not `submit`.
-
-JSON `description` and `category` may also be `null` to clear those optional values. Other text fields must be strings. JSON booleans must be actual `true` / `false` values, not strings, numbers, or `null`. Form boolean text is case-insensitive and surrounding whitespace is ignored; use lowercase `true` / `false` for consistency. Shortcut creation and update bodies accept text fields, not file uploads.
-
-Do not manually set `Content-Type: application/json` when sending a Form body. Curl sets the appropriate Form content type for `--data-urlencode` or `--form-string`.
+See the [JSON and Form examples](#update-examples) or the [validation reference](#request-validation-reference).
 
 ### Apple Shortcuts setup
 
 In **Get Contents of URL**:
 
-1. Set the URL to `https://shortcuty.app/api/v1/shortcuts/<uuid>/update` for an update, replacing `<uuid>` with the Shortcuty shortcut UUID. To create a shortcut, use `https://shortcuty.app/api/v1/shortcuts`.
-2. Set **Method** to **POST**.
-3. Add the header **Authorization** with the value `Bearer YOUR_API_KEY`, replacing the placeholder with your own key. Keep the key private.
-4. Choose **Request Body → JSON** or **Request Body → Form**.
-5. For an update, add `sharing_url`, `version`, and `changelog` as **Text** fields. The `sharing_url` value is the new iCloud shortcut link; `version` is text such as `1.2.0`.
-6. For creation, add `sharing_url` as **Text** and any optional creation fields. For boolean fields, use **Boolean** values in JSON or the **Text** `true` / `false` in Form.
+1. Set **Method → POST**.
+2. Add **Authorization → `Bearer YOUR_API_KEY`** in Headers.
+3. Choose **Request Body → JSON** or **Request Body → Form**.
+4. Set the URL and add the fields for your task:
 
-For Form, let Shortcuts set the content type and multipart boundary automatically. For JSON, use a JSON body rather than placing JSON text in a Form field.
+| Task | URL | Fields for a minimal example |
+|---|---|---|
+| Create a draft | `https://shortcuty.app/api/v1/shortcuts` | `sharing_url` as **Text** |
+| Release an update | `https://shortcuty.app/api/v1/shortcuts/<uuid>/update` | `sharing_url`, `version`, `changelog`, all as **Text** |
 
-The separate [screenshot upload endpoint](#upload-screenshot) still uses multipart Form with a file. The body formats above apply to shortcut creation and updates.
+Use the Shortcuty UUID in the update URL. For example, enter `1.2.0` in the version Text field. Additional fields and their types are in [Shortcut fields](#shortcut-fields).
 
----
+## Endpoints
+
+Paths below are relative to the base URL.
+
+| Method | Path | Task |
+|---|---|---|
+| GET | `/categories` | [Get Categories](#get-categories) |
+| POST | `/shortcuts` | [Create Shortcut](#create-shortcut) |
+| GET | `/shortcuts/my` | [Get My Shortcuts](#get-my-shortcuts) |
+| GET | `/shortcuts/<uuid>` | [Get Shortcut](#get-shortcut) |
+| POST | `/shortcuts/<uuid>/update` | [Update Shortcut](#update-shortcut) |
+| POST | `/shortcuts/<uuid>/submit` | [Submit Draft Shortcut](#submit-draft-shortcut) |
+| GET | `/shortcuts/<uuid>/history` | [Get Shortcut History](#get-shortcut-history) |
+| POST | `/upload/screenshot` | [Upload Screenshot](#upload-screenshot) |
+| DELETE | `/shortcuts/<uuid>/screenshots/<screenshot_id>` | [Delete Screenshot](#delete-screenshot) |
 
 ## Categories
 
 ### Get Categories
 
-**GET** `/api/v1/categories`
+**GET** `/categories`
 
-Returns all available categories. Public endpoint (no authentication required).
+**Authentication:** None.
 
-**Response (200 OK):**
+**Response:** `200`, an object containing a `categories` array of valid category names. Use these values in the `category` field.
 
 ```json
-{
-  "categories": [
-    "Artificial Intelligence",
-    "Education",
-    "Entertainment",
-    "Finance",
-    "Food & Dining",
-    "Gaming",
-    "Health & Fitness",
-    "Music",
-    "News",
-    "Photography",
-    "Productivity",
-    "Shopping",
-    "Shortcut Extension",
-    "Sideloading",
-    "Social Media",
-    "Sports",
-    "Technology",
-    "Travel",
-    "Utilities",
-    "Weather"
-  ]
-}
+{"categories":["Productivity","Utilities"]}
 ```
 
----
+The example is abbreviated; the endpoint returns the full list.
 
 ## Shortcuts
 
 ### Create Shortcut
 
-**POST** `/api/v1/shortcuts`
+**POST** `/shortcuts`
 
-Creates a new shortcut (draft or submitted).
+**Body:** JSON or Form. `sharing_url` is required; see [Shortcut fields](#shortcut-fields) for optional fields. Use `auto_submit: true` to submit immediately, or omit it to create a draft.
 
-**Request body:** JSON or Form. See [Request body formats](#request-body-formats).
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `sharing_url` | String | Yes | iCloud sharing URL beginning with `https://www.icloud.com/shortcuts/`. |
-| `description` | String | No | Shortcut description, up to 500,000 characters. |
-| `category` | String | No | A value from [Get Categories](#get-categories). |
-| `updater_type` | String | No | `shortcuty`, `third_party`, or `none` (default: `none`). |
-| `requires_ios26_ai` | Boolean | No | Whether the shortcut requires iOS 26 AI features (default: `false`). |
-| `auto_submit` | Boolean | No | Submit immediately for review and scanning (default: `false`). |
-| `visibility` | String | No | `public` or `private` (default: `public`). |
-
-The shortcut name is extracted from the iCloud shortcut. Do not send `name` or `submit`; use `auto_submit` for immediate submission.
-
-JSON example:
-
-```json
-{
-  "sharing_url": "https://www.icloud.com/shortcuts/REPLACE_WITH_ICLOUD_SHARE_ID",
-  "description": "Shortcut description",
-  "category": "Productivity",
-  "updater_type": "none",
-  "requires_ios26_ai": false,
-  "auto_submit": false,
-  "visibility": "public"
-}
-```
-
-Form example (URL-encoded):
-
-```sh
-curl --request POST 'https://shortcuty.app/api/v1/shortcuts' \
-  --header 'Authorization: Bearer YOUR_API_KEY' \
-  --data-urlencode 'sharing_url=https://www.icloud.com/shortcuts/REPLACE_WITH_ICLOUD_SHARE_ID' \
-  --data-urlencode 'description=Shortcut description' \
-  --data-urlencode 'category=Productivity' \
-  --data-urlencode 'requires_ios26_ai=false' \
-  --data-urlencode 'auto_submit=false'
-```
-
-**Response (201 Created):**
+**Response:** `201`, containing `message` and a [shortcut object](#shortcut-object). A submitted response also includes `scan_queued`.
 
 ```json
 {
   "message": "Draft shortcut created",
   "shortcut": {
     "uuid": "123e4567-e89b-12d3-a456-426614174000",
-    "name": "Shortcut Name",
-    "description": "Shortcut description",
-    "sharing_url": "https://www.icloud.com/shortcuts/...",
-    "version": "1.0.0",
-    "status": "draft",
-    "category": "Productivity",
-    "created_at": "2024-01-15T10:30:00Z",
-    "updated_at": "2024-01-15T10:30:00Z",
-    "requires_ios26_ai": false,
-    "updater_type": "shortcuty"
+    "status": "draft"
   }
 }
 ```
 
----
+This response is abbreviated. For a complete request, use the [quickstart](#quickstart-create-a-draft-then-submit-it).
 
 ### Get My Shortcuts
 
-**GET** `/api/v1/shortcuts/my?page=1&per_page=20`
+**GET** `/shortcuts/my`
 
-Returns shortcuts owned by the authenticated API key's account, including drafts, pending initial submissions, and rejected submissions. A pending update on an approved shortcut appears in [history](#get-shortcut-history); it does not replace the approved shortcut in this list.
+Returns the authenticated account's shortcuts, including private shortcuts and all lifecycle statuses.
 
-**Query Parameters:**
+| Query parameter | Default |
+|---|---|
+| `page` | `1` |
+| `per_page` | `20` |
 
-- `page` (optional, default: 1)
+**Response:** `200`, containing:
 
-- `per_page` (optional, default: 20)
-
-**Response (200 OK):**
-
-```json
-{
-  "shortcuts": [
-    {
-      "uuid": "...",
-      "name": "...",
-      "description": "...",
-      "sharing_url": "...",
-      "version": "...",
-      "status": "approved",
-      "category": "...",
-      "created_at": "...",
-      "updated_at": "...",
-      "requires_ios26_ai": false,
-      "updater_type": "..."
-    }
-  ],
-  "total": 10,
-  "pages": 1,
-  "current_page": 1
-}
-```
-
----
+| Field | Value |
+|---|---|
+| `shortcuts` | Array of [shortcut objects](#shortcut-object) |
+| `total` | Total matching shortcuts |
+| `pages` | Total pages |
+| `current_page` | Requested page |
 
 ### Get Shortcut
 
-**GET** `/api/v1/shortcuts/<uuid>`
+**GET** `/shortcuts/<uuid>`
 
-Returns a single shortcut by UUID. The owner can read an initial submission while it is draft, pending, or rejected. Other accounts cannot read those non-approved submissions. For an approved shortcut with a pending update, this endpoint returns the approved base version; use owner-only [history](#get-shortcut-history) to inspect the proposal.
+Returns one shortcut. See [Visibility and pending versions](#visibility-and-pending-versions) for access rules.
 
-**Response (200 OK):**
-
-```json
-{
-  "shortcut": {
-    "uuid": "...",
-    "name": "...",
-    "description": "...",
-    "sharing_url": "...",
-    "version": "...",
-    "status": "...",
-    "category": "...",
-    "created_at": "...",
-    "updated_at": "...",
-    "requires_ios26_ai": false,
-    "updater_type": "...",
-    "rejection_reason": "..."
-  }
-}
-```
-
----
+**Response:** `200`, containing `shortcut`, a [shortcut object](#shortcut-object).
 
 ### Update Shortcut
 
-**POST** `/api/v1/shortcuts/<uuid>/update`
+**POST** `/shortcuts/<uuid>/update`
 
-Updates a shortcut owned by the authenticated API key's account. Draft changes apply immediately. Changes to submitted shortcuts use the review and scanning flow as applicable.
+**Access:** Owner only.
 
-**Request body:** JSON or Form. See [Request body formats](#request-body-formats). All fields below are optional, but the request must make a change. For a draft or a new update, send the fields you want to change. To replace an existing pending update, include all changes you still want, as explained below.
+**Body:** JSON or Form using the update fields in [Shortcut fields](#shortcut-fields). Send a change; unchanged values alone return `400`.
 
-| Field | Type | Description |
-|---|---|---|
-| `sharing_url` | String | Updated iCloud sharing URL. Use this exact name, not `link`. |
-| `description` | String | Updated description, up to 500,000 characters. |
-| `category` | String | A value from [Get Categories](#get-categories). |
-| `requires_ios26_ai` | Boolean | Whether the shortcut requires iOS 26 AI features. |
-| `updater_type` | String | `shortcuty`, `third_party`, or `none`. |
-| `version` | String | Version text such as `"1.2.0"`, up to 50 characters. JSON numbers are not accepted. |
-| `changelog` | String | Release notes, up to 10,000 characters. Use this exact name, not `changes`. |
-| `visibility` | String | `public` or `private`. |
+Draft edits apply immediately. Other edits follow the applicable approval or review flow. If a proposal is already pending, see [Replacing a pending update](#replacing-a-pending-update).
 
-JSON example:
+**Response:** `200` or `201`; see [Understanding successful responses](#understanding-successful-responses).
+
+#### Update examples
+
+**JSON**
 
 ```sh
 curl --request POST 'https://shortcuty.app/api/v1/shortcuts/REPLACE_WITH_SHORTCUT_UUID/update' \
   --header 'Authorization: Bearer YOUR_API_KEY' \
   --header 'Content-Type: application/json' \
-  --data '{"sharing_url":"https://www.icloud.com/shortcuts/REPLACE_WITH_ICLOUD_SHARE_ID","version":"1.2.0","changelog":"Bug fixes and improvements"}'
+  --data '{"sharing_url":"https://www.icloud.com/shortcuts/REPLACE_WITH_ICLOUD_SHARE_ID","version":"1.2.0","changelog":"Bug fixes"}'
 ```
 
-Form example (URL-encoded):
+**URL-encoded Form**
+
+For Form requests, let the client set `Content-Type`. Remove any manual `application/json` header; multipart clients must also generate their own boundary.
 
 ```sh
 curl --request POST 'https://shortcuty.app/api/v1/shortcuts/REPLACE_WITH_SHORTCUT_UUID/update' \
   --header 'Authorization: Bearer YOUR_API_KEY' \
   --data-urlencode 'sharing_url=https://www.icloud.com/shortcuts/REPLACE_WITH_ICLOUD_SHARE_ID' \
   --data-urlencode 'version=1.2.0' \
-  --data-urlencode 'changelog=Bug fixes and improvements'
+  --data-urlencode 'changelog=Bug fixes'
 ```
 
-Form example (multipart):
+**Multipart Form**
 
 ```sh
 curl --request POST 'https://shortcuty.app/api/v1/shortcuts/REPLACE_WITH_SHORTCUT_UUID/update' \
   --header 'Authorization: Bearer YOUR_API_KEY' \
   --form-string 'sharing_url=https://www.icloud.com/shortcuts/REPLACE_WITH_ICLOUD_SHARE_ID' \
   --form-string 'version=1.2.0' \
-  --form-string 'changelog=Bug fixes and improvements'
+  --form-string 'changelog=Bug fixes'
 ```
-
-Use the Shortcuty shortcut UUID in the endpoint and the iCloud share ID in `sharing_url`. These are different identifiers. A request with no effective changes returns `400`.
 
 ### Replacing a pending update
 
-Send another request to the same update endpoint to replace your current pending proposal. The new request replaces the **entire pending proposal**, rather than merging into it: fields and release notes omitted from the new request are not carried over. Include every unapproved change and the changelog you still want.
+A new update request replaces the **entire pending proposal**. Include all unapproved changes and release notes you want to keep; omitted proposal fields are dropped.
 
-For example, if the pending proposal changes both `sharing_url` and `version`, sending only a new `changelog` drops those proposed URL and version changes. Send all three fields to retain them.
-
-While a proposal remains pending, its unapproved changes do not replace the approved shortcut's live version. Draft edits, visibility changes, and automatically approved edits can apply immediately; read the response and history to see the outcome.
-
-### Understanding successful responses
-
-| Request | Status | Meaning |
-|---|---|---|
-| Create | `201` | A shortcut was created: a draft by default, or submitted when `auto_submit` is `true`. This does not guarantee publication. |
-| Update | `200` | Changes were applied immediately, an update was automatically approved, or an initial pending submission was edited. Read `message`; an edited pending submission is still pending. |
-| Update | `201` | An update was accepted for processing, scanning, or manual review. This does not guarantee approval or publication. |
-| Submit draft | `200` / `202` | Submitted for review; `202` means scan admission is deferred. This does not guarantee approval or publication. |
-
-Responses include a `message`; update-record responses also include `update_id`. When present, `scan_queued: true` means scan admission succeeded, and `false` means admission was deferred for automatic recovery. Confirm approval in the owner's history or initial-submission status.
-
-Example of an accepted update:
-
-```json
-{
-  "message": "Update queued for processing and scan",
-  "scan_queued": true,
-  "update_id": 123
-}
-```
-
----
+For example, if the pending proposal changes the URL and version, sending only `changelog` drops those proposed URL and version changes. Send all three fields to retain them.
 
 ### Submit Draft Shortcut
 
-**POST** `/api/v1/shortcuts/<uuid>/submit`
+**POST** `/shortcuts/<uuid>/submit`
 
-Submits an owned draft or rejected shortcut for review. No request body is required. Returns `200` when scanning is admitted, or `202` when scan admission is deferred; the submission remains pending either way.
+**Access:** Owner only; the shortcut must be draft or rejected.
 
-**Response (200 OK; 202 if deferred):**
+**Body:** None.
 
-```json
-{
-  "message": "Shortcut queued for review and scanning",
-  "scan_queued": true
-}
-```
-
----
+**Response:** `200` when scanning is admitted, or `202` when admission is deferred for recovery. Both include `message` and `scan_queued`. The submission remains pending.
 
 ### Get Shortcut History
 
-**GET** `/api/v1/shortcuts/<uuid>/history`
+**GET** `/shortcuts/<uuid>/history`
 
-Returns version history, including pending and rejected updates, for the shortcut owner only. A key belonging to another account cannot read this history, including an admin account's key. Non-owners receive `404`.
+**Access:** See the owner-only history rule in [Visibility and pending versions](#visibility-and-pending-versions).
 
-An initial submission is tracked on the shortcut itself; check `/shortcuts/my` or `/shortcuts/<uuid>` for its status. A pending update to an approved shortcut appears here while the list and detail endpoints continue to show the approved base version.
-
-**Response (200 OK):**
+**Response:** `200`, containing `shortcut_name`, `shortcut_uuid`, and a `changelog` array:
 
 ```json
 {
-  "shortcut_name": "My Shortcut",
-  "shortcut_uuid": "...",
-  "changelog": [
-    {
-      "version": "1.2.0",
-      "changelog": "What's new",
-      "date": "2024-01-20T14:22:00Z",
-      "status": "approved",
-      "sharing_url": "https://...",
-      "changes": {
-        "description": "Updated description"
-      }
-    }
-  ]
+  "shortcut_name": "Example Shortcut",
+  "shortcut_uuid": "123e4567-e89b-12d3-a456-426614174000",
+  "changelog": [{
+    "version": "1.2.0",
+    "changelog": "Bug fixes",
+    "date": "2026-10-15T12:00:00Z",
+    "status": "pending",
+    "sharing_url": "https://www.icloud.com/shortcuts/EXAMPLE_SHARE_ID",
+    "changes": {"new_version": "1.2.0"}
+  }]
 }
 ```
 
----
+Entries include approved, pending, and rejected updates. `changes` contains proposed field changes; sharing URLs are exposed separately in `sharing_url`.
+
+### Visibility and pending versions
+
+| State or resource | Owner's API key | Another account's API key |
+|---|---|---|
+| Initial draft, pending, rejected, or delisted shortcut | Available in list/detail | Detail returns `404` |
+| Approved shortcut with a pending update | List/detail show the approved base version | Detail shows the approved base version |
+| Update history | Includes pending, approved, and rejected entries | `404`, including for an admin key |
+
+An initial submission is stored on the shortcut itself; history does not synthesize an entry for it. While an update is pending, the approved version stays live. Draft edits, visibility changes, and automatically approved edits can apply immediately.
 
 ## Screenshots
 
 ### Upload Screenshot
 
-**POST** `/api/v1/upload/screenshot`
+**POST** `/upload/screenshot`
 
-Uploads a screenshot for a shortcut.
+**Body:** Multipart Form.
 
-**Content-Type:** `multipart/form-data`
+| Field | Required | Value |
+|---|---|---|
+| `file` | Yes | PNG, JPEG, or GIF image file |
+| `shortcut_id` | Yes | Shortcuty UUID |
 
-**Form Data:**
+Maximum five screenshots per shortcut. File extensions and file content are validated.
 
-- `file` (required): Image file (PNG, JPEG, GIF)
-
-- `shortcut_id` (required): Shortcut UUID
-
-**Limits:**
-
-- Maximum 5 screenshots per shortcut
-
-- Valid file extensions: `.png`, `.jpg`, `.jpeg`, `.gif`
-
-- File content is validated
-
-**Response (200 OK):**
-
-```json
-{
-  "screenshot": {
-    "id": 123,
-    "shortcut_id": 456,
-    "filename": "screenshots/2025/12/uuid.png",
-    "url": "https://shortcuty.app/uploads/screenshots/2025/12/uuid.png",
-    "order": 0,
-    "created_at": "2024-01-15T10:30:00Z"
-  }
-}
-```
-
----
+**Response:** `200`, containing `screenshot` with `id`, `shortcut_id`, `filename`, `url`, `order`, and `created_at`.
 
 ### Delete Screenshot
 
-**DELETE** `/api/v1/shortcuts/<uuid>/screenshots/<screenshot_id>`
+**DELETE** `/shortcuts/<uuid>/screenshots/<screenshot_id>`
 
-Deletes a screenshot for a shortcut.
-
-**Response (200 OK):**
+**Response:** `200`.
 
 ```json
-{
-  "message": "Screenshot deleted successfully"
-}
+{"message":"Screenshot deleted successfully"}
 ```
 
----
+## Shortcut fields
+
+The table is the request field reference for create and update. A dash means the field is not accepted by that endpoint.
+
+| Field | Type | Create | Update | Values / limit |
+|---|---|---|---|---|
+| `sharing_url` | String | **Required** | Optional | iCloud shortcut sharing URL |
+| `description` | String or null | Optional | Optional | Up to 500,000 characters |
+| `category` | String or null | Optional | Optional | A value from [Get Categories](#get-categories) |
+| `requires_ios26_ai` | Boolean | Optional; default `false` | Optional | Whether iOS 26 AI features are required |
+| `updater_type` | String | Optional; default `none` | Optional | `shortcuty`, `third_party`, `none` |
+| `visibility` | String | Optional; default `public` | Optional | `public`, `private` |
+| `auto_submit` | Boolean | Optional; default `false` | — | Submit at creation instead of saving a draft |
+| `version` | String | — | Optional | Up to 50 characters, e.g. `"1.2.0"` |
+| `changelog` | String | — | Optional | Release notes, up to 10,000 characters |
+
+### Field names and common mistakes
+
+| Use | Instead of |
+|---|---|
+| `sharing_url` | `link` |
+| `changelog` | `changes` |
+| `auto_submit` during creation | `submit` |
+| The name extracted from iCloud | Sending the read-only `name` field |
+
+Unknown and read-only request fields return `400`.
+
+## Request validation reference
+
+These rules apply to shortcut creation and update bodies.
+
+| Rule | Accepted | Rejected |
+|---|---|---|
+| Body structure | Nonempty JSON object or Form fields at the top level | Empty body, JSON array, wrappers such as `data` or `shortcut` |
+| Field uniqueness | Each field once | Duplicate JSON or Form fields, even with identical values |
+| Text values | JSON strings or Form Text fields | JSON numbers, objects, or arrays for text fields |
+| Boolean values | JSON `true` / `false`; Form text `true` / `false` (case and surrounding whitespace ignored) | JSON strings/numbers/null; other Form boolean text |
+| Clearing optional values | JSON `null` for `description` or `category` | JSON `null` for other fields; Form `null` remains literal text |
+| Files | Use [Upload Screenshot](#upload-screenshot) | File parts in shortcut creation or update bodies |
 
 ## Response Fields
 
 ### Shortcut Object
 
-```json
-{
-  "uuid": "string",
-  "name": "string",
-  "description": "string | null",
-  "sharing_url": "string",
-  "version": "string | null",
-  "status": "draft | pending | approved | rejected | delisted",
-  "category": "string | null",
-  "created_at": "string | null (ISO 8601)",
-  "updated_at": "string | null (ISO 8601)",
-  "requires_ios26_ai": "boolean",
-  "updater_type": "shortcuty | third_party | none",
-  "visibility": "public | private",
-  "rejection_reason": "string (only if status is 'rejected')"
-}
-```
+| Field | Type / values |
+|---|---|
+| `uuid` | String; Shortcuty UUID |
+| `name` | String; extracted from iCloud |
+| `description` | String or null |
+| `sharing_url` | String |
+| `version` | String or null |
+| `status` | `draft`, `pending`, `approved`, `rejected`, `delisted` |
+| `category` | String or null |
+| `created_at`, `updated_at` | ISO 8601 string or null |
+| `requires_ios26_ai` | Boolean |
+| `updater_type` | `shortcuty`, `third_party`, `none` |
+| `visibility` | `public`, `private` |
+| `rejection_reason` | String or null; included when status is rejected |
 
----
+### Understanding successful responses
+
+| Request | Status | Meaning |
+|---|---|---|
+| Create | `201` | A draft was created, or submitted when `auto_submit` is `true`. |
+| Update | `200` | Draft/visibility edits applied, automatic approval completed, or an initial pending submission was edited. Read `message` for the outcome. |
+| Update | `201` | An update was accepted for processing, scanning, or manual review. Approval is still required. |
+| Submit | `200` / `202` | See [Submit Draft Shortcut](#submit-draft-shortcut). |
+
+| Response field | Meaning |
+|---|---|
+| `message` | Describes the outcome. |
+| `update_id` | Identifies an update record, when created or replaced. |
+| `status` | For update-record responses, `pending` or `approved`. |
+| `replaced_pending` | For update-record responses, whether an existing pending proposal was replaced. |
+| `scan_queued` | When present, `true` means scan admission succeeded; `false` means it was deferred for automatic recovery. |
 
 ## Errors and retries
 
-Errors are JSON objects with an `error` message, for example:
+Errors use this JSON shape:
 
 ```json
-{
-  "error": "Field version must be a string"
-}
+{"error":"Field version must be a string"}
 ```
-
-For shortcut creation and updates:
 
 | Status | Meaning |
 |---|---|
-| `400 Bad Request` | Empty or malformed body; JSON that is not a nonempty object; duplicate fields; file parts; invalid types, booleans, names, or values; or an update with no changes. Correct the request before sending it again. |
-| `401 Unauthorized` | Missing or invalid API key. |
-| `403 Forbidden` | The account is inactive, or the API key's account does not own the shortcut being changed. |
-| `404 Not Found` | The shortcut does not exist, or the caller cannot read the requested non-approved shortcut or owner-only history. |
-| `413 Request Entity Too Large` | The request exceeds the server's body size limit. |
-| `415 Unsupported Media Type` | Missing or unsupported `Content-Type`. Use JSON, URL-encoded Form, or multipart Form. |
-| `500 Internal Server Error` | The request failed on the server. It may already have saved a submission or update; check before retrying. |
+| `400` | Invalid body, field, value, or lifecycle action. Check the error message and [validation reference](#request-validation-reference). |
+| `401` | Missing or invalid API key. |
+| `403` | Inactive account or insufficient ownership for the requested change. |
+| `404` | Not found or access is unavailable; see [Visibility and pending versions](#visibility-and-pending-versions). |
+| `413` | Request exceeds the server's body size limit. |
+| `415` | Missing or unsupported `Content-Type`; see [Request body formats](#request-body-formats). |
+| `500` | Server error; the request may already have saved data. |
 
-Field names are exact. `name` is read-only; `link`, `changes`, and `submit` are not accepted request fields. Use `sharing_url`, `changelog`, and creation's `auto_submit`. Duplicate fields return `Duplicate field: <field>`, even when both values match. Versions longer than 50 characters return `Version must be 50 characters or less`.
+### Checking an uncertain result
 
-**After a `500` or an uncertain result, do not automatically repeat the POST.** First inspect the owner's **GET** `/api/v1/shortcuts/my`, **GET** `/api/v1/shortcuts/<uuid>`, and **GET** `/api/v1/shortcuts/<uuid>/history` as applicable. An initial submission may already exist, and an update may already be pending or approved. Confirm the saved state before a manual retry; a repeated update can replace the current pending proposal.
+After a server error or lost response, check the result before manually repeating a POST:
+
+| You were trying to… | Check with GET |
+|---|---|
+| Create a shortcut | `/shortcuts/my` |
+| Submit an initial version | `/shortcuts/<uuid>` |
+| Release an update | `/shortcuts/<uuid>/history` |
+
+These checks use the owner's Authorization header. A repeated update can [replace the pending proposal](#replacing-a-pending-update).
