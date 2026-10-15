@@ -50,8 +50,6 @@ curl --request POST 'https://shortcuty.app/api/v1/shortcuts/REPLACE_WITH_SHORTCU
 
 ## Request body formats
 
-> Rollout status: JSON and Form compatibility is prepared; production deployment confirmation is pending. The body formats below describe the upcoming contract.
-
 The following endpoints accept the same field names and validation rules in either JSON or Form bodies:
 
 - **POST** `/api/v1/shortcuts`
