@@ -6,7 +6,7 @@ Create shortcut drafts, submit them for review, release updates, and check their
 
 **Base URL:** `https://shortcuty.app/api/v1`
 
-[Quickstart](#quickstart-create-a-draft-then-submit-it) · [Apple Shortcuts](#apple-shortcuts-setup) · [Endpoints](#endpoints) · [Fields](#shortcut-fields) · [Troubleshooting](#errors-and-retries)
+[Quickstart](#quickstart-create-a-draft-then-submit-it) · [Apple Shortcuts](#apple-shortcuts-setup) · [Endpoints](#endpoints) · [Fields](#shortcut-fields) · [Taglines](#taglines) · [Troubleshooting](#errors-and-retries)
 
 ## Authentication
 
@@ -28,7 +28,7 @@ Replace the placeholders below with your own values.
 curl --request POST 'https://shortcuty.app/api/v1/shortcuts' \
   --header 'Authorization: Bearer YOUR_API_KEY' \
   --header 'Content-Type: application/json' \
-  --data '{"sharing_url":"https://www.icloud.com/shortcuts/REPLACE_WITH_ICLOUD_SHARE_ID"}'
+  --data '{"sharing_url":"https://www.icloud.com/shortcuts/REPLACE_WITH_ICLOUD_SHARE_ID","tagline":"A quick daily plan"}'
 ```
 
 Save `shortcut.uuid` from the `201` response. This is the **Shortcuty UUID**, which is different from the ID in the iCloud link.
@@ -162,7 +162,7 @@ Returns one shortcut. See [Visibility and pending versions](#visibility-and-pend
 
 **Access:** Owner only.
 
-**Body:** JSON or Form using the update fields in [Shortcut fields](#shortcut-fields). Send a change; unchanged values alone return `400`.
+**Body:** JSON or Form using the update fields in [Shortcut fields](#shortcut-fields). Send an applicable change; requests with no applicable changes may return `400`. An explicit `tagline` value is a proposal input even when it equals the current text, so a repeated tagline request can still return `200` or `201`.
 
 Draft edits apply immediately. Other edits follow the applicable approval or review flow. If a proposal is already pending, see [Replacing a pending update](#replacing-a-pending-update).
 
@@ -203,7 +203,7 @@ curl --request POST 'https://shortcuty.app/api/v1/shortcuts/REPLACE_WITH_SHORTCU
 
 ### Replacing a pending update
 
-A new update request replaces the **entire pending proposal**. Include all unapproved changes and release notes you want to keep; omitted proposal fields are dropped.
+A new update request replaces the pending proposal. Include all unapproved changes and release notes you want to keep. Omitted proposal fields are dropped **except `tagline`**: omitting it preserves the pending tagline, including a pending clear, for compatibility with older clients. Send `tagline` explicitly to replace or clear it.
 
 For example, if the pending proposal changes the URL and version, sending only `changelog` drops those proposed URL and version changes. Send all three fields to retain them.
 
@@ -287,6 +287,7 @@ The table is the request field reference for create and update. A dash means the
 |---|---|---|---|---|
 | `sharing_url` | String | **Required** | Optional | iCloud shortcut sharing URL |
 | `description` | String or null | Optional | Optional | Up to 500,000 characters |
+| `tagline` | String or null | Optional | Optional | Single-line plain text; up to 120 Unicode scalar values **after normalization**; see [Taglines](#taglines) |
 | `category` | String or null | Optional | Optional | A value from [Get Categories](#get-categories) |
 | `requires_ios26_ai` | Boolean | Optional; default `false` | Optional | Whether iOS 26 AI features are required |
 | `updater_type` | String | Optional; default `none` | Optional | `shortcuty`, `third_party`, `none` |
@@ -294,6 +295,37 @@ The table is the request field reference for create and update. A dash means the
 | `auto_submit` | Boolean | Optional; default `false` | — | Submit at creation instead of saving a draft |
 | `version` | String | — | Optional | Up to 50 characters, e.g. `"1.2.0"` |
 | `changelog` | String | — | Optional | Release notes, up to 10,000 characters |
+
+### Taglines
+
+`tagline` is optional plain text shown below the shortcut name and on cards. It is supported in JSON, URL-encoded Form, and multipart Form **Text** fields on create/update. Taglines do not accept file uploads or a separate approval endpoint.
+
+The server collapses each whitespace run (including line breaks) to one ASCII space, trims surrounding whitespace, and normalizes to NFC. The resulting value can contain at most **120 Unicode scalar values**; the limit is not bytes, UTF-16 code units, or displayed grapheme clusters. Remaining control characters and lone surrogates are rejected with `400`. A decomposed `e` plus combining acute accent normalizes to one `é`; an emoji outside the BMP counts as one scalar. Normalization happens before the length check.
+
+| Request value | Create | Update |
+|---|---|---|
+| Omitted | Store no tagline (`null`) | Preserve the current tagline, or the tagline in an existing pending proposal |
+| Nonblank string | Store the normalized text | Propose/apply the normalized replacement |
+| `""`, whitespace-only, or JSON `null` | Store no tagline | Explicitly clear the tagline |
+| Form text `null` | Store the literal word `null` | Propose the literal word `null`; use an empty Form field to clear |
+| Number, boolean, array, or object | `400` | `400` |
+
+For example, `{"tagline":"  A\r\nquick\tplan  "}` stores `A quick plan`. A tagline-only edit does not require a new sharing URL, version, or changelog:
+
+```sh
+curl --request POST 'https://shortcuty.app/api/v1/shortcuts/REPLACE_WITH_SHORTCUT_UUID/update' \
+  --header 'Authorization: Bearer YOUR_API_KEY' \
+  --header 'Content-Type: application/json' \
+  --data '{"tagline":"A faster daily plan"}'
+```
+
+Clear it with `--data '{"tagline":null}'` in JSON or `--data-urlencode 'tagline='` in a URL-encoded Form request. The dedicated `/submit` request remains bodyless and reviews the stored tagline; edit it through `/update` before submitting if needed.
+
+Draft edits apply immediately. Editing a first pending submission keeps it pending and queues a fresh scan. On an approved shortcut, a changed tagline joins the normal AI assessment of the shortcut and description; there is no separate tagline-review step. It is not an approval promise: unsafe, incomplete, or failed assessments remain in the existing review/retry flow. The approved tagline remains live while its replacement is pending. Existing rejected-submission safeguards still apply.
+
+`shortcut.tagline` is present in create/detail/list shortcut objects and is `null` when cleared. Pending/history changes expose an explicit clear as `changes.tagline: null`. A tagline-only edit leaves `version` unchanged; the plain-text version and download-redirect endpoints keep their existing formats. Ordinary public/app JSON shortcut responses also include the original tagline, subject to their existing access rules; this does not make Creator API writes public.
+
+Tagline translations are separate from author source. Normal submissions/edits and opt-in translation reads can queue matching translations. Changed/cleared taglines cannot reuse a translation for different source text; while a translation is unavailable, clients retain the original. Creator `/api/v1` detail/list responses always return original author text. Saved translation reads are separate, outside the Creator API: `GET /api/shortcuts/<uuid>/translations/<target>?include_tagline=1` or `POST /api/shortcuts/translations/batch` with `include_tagline: true`. Batch items use numeric IDs from ordinary JSON shortcut metadata, not Creator API UUIDs. These routes retain their existing optional-session access checks: approved public shortcuts are readable anonymously; nonpublic/pending sources require an authorized owner/admin session. A Creator Bearer key does not grant that session access. Opt-in source hashes include name, description, and tagline (`shortcut-fields-v2`); legacy translation requests retain their name/description hash. Apply translated text only with a matching target and `field_hashes.tagline` (SHA-256 of original UTF-8 source). Never write translated display text back as the author's source.
 
 ### Field names and common mistakes
 
@@ -316,7 +348,7 @@ These rules apply to shortcut creation and update bodies.
 | Field uniqueness | Each field once | Duplicate JSON or Form fields, even with identical values |
 | Text values | JSON strings or Form Text fields | JSON numbers, objects, or arrays for text fields |
 | Boolean values | JSON `true` / `false`; Form text `true` / `false` (case and surrounding whitespace ignored) | JSON strings/numbers/null; other Form boolean text |
-| Clearing optional values | JSON `null` for `description` or `category` | JSON `null` for other fields; Form `null` remains literal text |
+| Clearing optional values | JSON `null` for `description`, `category`, or `tagline` | JSON `null` for other fields; Form `null` remains literal text |
 | Files | Use [Upload Screenshot](#upload-screenshot) | File parts in shortcut creation or update bodies |
 
 ## Response Fields
@@ -328,6 +360,7 @@ These rules apply to shortcut creation and update bodies.
 | `uuid` | String; Shortcuty UUID |
 | `name` | String; extracted from iCloud |
 | `description` | String or null |
+| `tagline` | String or null; normalized original author text |
 | `sharing_url` | String |
 | `version` | String or null |
 | `status` | `draft`, `pending`, `approved`, `rejected`, `delisted` |
