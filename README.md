@@ -98,7 +98,7 @@ Paths below are relative to the base URL.
 
 **Authentication:** None.
 
-**Response:** `200`, an object containing a `categories` array of valid category names. Use these values in the `category` field.
+**Response:** `200`, an object containing a `categories` array of valid category names. Use these values in the `category` or `categories` fields.
 
 ```json
 {"categories":["Productivity","Utilities"]}
@@ -288,13 +288,38 @@ The table is the request field reference for create and update. A dash means the
 | `sharing_url` | String | **Required** | Optional | iCloud shortcut sharing URL |
 | `description` | String or null | Optional | Optional | Up to 500,000 characters |
 | `tagline` | String or null | Optional | Optional | Single-line plain text; up to 120 Unicode scalar values **after normalization**; see [Taglines](#taglines) |
-| `category` | String or null | Optional | Optional | A value from [Get Categories](#get-categories) |
+| `category` | String or null | Optional | Optional | Primary; legacy writes preserve secondaries; see [Multiple categories](#multiple-categories) |
+| `categories` | String array | Optional | Optional | 1–3 unique preset names; requires `primary_category` |
+| `primary_category` | String | With `categories` | With `categories` | Exactly one member; agrees with `category` if supplied |
+| `category_revision` | Integer | Omit | With explicit category edits | Last response's revision; stale edits return `409` |
 | `requires_ios26_ai` | Boolean | Optional; default `false` | Optional | Whether iOS 26 AI features are required |
 | `updater_type` | String | Optional; default `none` | Optional | `shortcuty`, `third_party`, `none` |
 | `visibility` | String | Optional; default `public` | Optional | `public`, `private` |
 | `auto_submit` | Boolean | Optional; default `false` | — | Submit at creation instead of saving a draft |
 | `version` | String | — | Optional | Up to 50 characters, e.g. `"1.2.0"` |
 | `changelog` | String | — | Optional | Release notes, up to 10,000 characters |
+
+### Multiple categories
+
+The multi-category release adds `categories`, `primary_category`, and `category_revision` while retaining the existing scalar `category` as the primary. These changes require the coordinated backend schema rollout; this candidate documentation must be published with that release.
+
+Use one to three unique exact category names from [Get Categories](#get-categories), with exactly one `primary_category` contained in the array. If `category` is also sent, it must equal that primary. On an update, include the last shortcut response's `category_revision`; a stale value returns `409`, and no fields are changed. Creation does not require a revision.
+
+```json
+{
+  "categories": ["Productivity", "Utilities", "Education"],
+  "primary_category": "Productivity",
+  "category_revision": 4
+}
+```
+
+Omit all category fields to keep the current selection, including pending category proposals. Explicitly send `["Productivity"]` with that primary to remove secondary categories. Empty/null arrays, duplicates, unknown names, more than three members, missing/conflicting primary values, and invalid field types return `400` atomically. Form callers put the JSON array in one `categories` Text field and the primary/revision in their own Text fields; repeated fields remain invalid.
+
+Existing clients can continue sending only `category`. Selecting an existing secondary promotes it while retaining the other members. A new category replaces the old primary and preserves its secondaries, including when there are already three members. An unchanged legacy scalar preserves a pending primary selection. A blank/null scalar removes only the primary and promotes the first secondary; with no remaining members it preserves the existing uncategorized behavior. Historical uncategorized shortcuts return `category: null`, `primary_category: null`, and `categories: []`; no arbitrary category is assigned.
+
+Responses return the primary first in `categories`; `primary_category` and `category` agree. Category-only edits keep the current version and existing review behavior. Pending sets are preserved in version history `changes.categories` and `changes.primary_category`, and are published only by the normal approval transaction. Every actual selection/proposal change advances `category_revision`; older clients merge under lock without needing that field.
+
+Category browsing/filtering matches any membership. A shortcut counts once in each matching category, so adding category totals can exceed the total number of shortcuts. Pending, private and unapproved data do not enter public counts. Category filtering does not change search ranking.
 
 ### Taglines
 
@@ -364,7 +389,10 @@ These rules apply to shortcut creation and update bodies.
 | `sharing_url` | String |
 | `version` | String or null |
 | `status` | `draft`, `pending`, `approved`, `rejected`, `delisted` |
-| `category` | String or null |
+| `category` | String or null, primary |
+| `categories` | Array of names, primary first; empty only for legacy uncategorized records |
+| `primary_category` | String or null; same primary as `category` |
+| `category_revision` | Nonnegative integer for explicit edit concurrency |
 | `created_at`, `updated_at` | ISO 8601 string or null |
 | `requires_ios26_ai` | Boolean |
 | `updater_type` | `shortcuty`, `third_party`, `none` |
