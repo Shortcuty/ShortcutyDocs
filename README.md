@@ -490,3 +490,7 @@ These checks use the owner's Authorization header. A repeated update can [replac
 Use **Report → Broken link** on a shortcut detail page if its iCloud link no longer opens. Repeating a report does not create another open report; submission limits keep the review queue useful. Reporting does not remove the shortcut.
 
 Start an update changelog with the most useful change. After approval, notifications for a changed iCloud link can include a short plain-text excerpt (up to 180 characters) and open the correct Shortcuty detail page. Existing likes, follows and notification preferences still determine delivery. Pending or rejected release notes are never used.
+
+## Requests API
+
+[Requests API v1](REQUESTS-API.md) uses the existing account session under `/api`, with capability-gated availability. Its authentication is separate from the bearer-key V1 shortcut endpoints above.
