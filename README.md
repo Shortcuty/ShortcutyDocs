@@ -484,3 +484,9 @@ After a server error or lost response, check the result before manually repeatin
 | Release an update | `/shortcuts/<uuid>/history` |
 
 These checks use the owner's Authorization header. A repeated update can [replace the pending proposal](#replacing-a-pending-update).
+
+## Broken links and update notifications
+
+Use **Report → Broken link** on a shortcut detail page if its iCloud link no longer opens. Repeating a report does not create another open report; submission limits keep the review queue useful. Reporting does not remove the shortcut.
+
+Start an update changelog with the most useful change. After approval, notifications for a changed iCloud link can include a short plain-text excerpt (up to 180 characters) and open the correct Shortcuty detail page. Existing likes, follows and notification preferences still determine delivery. Pending or rejected release notes are never used.
