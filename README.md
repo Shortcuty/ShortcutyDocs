@@ -6,7 +6,7 @@ Create shortcut drafts, submit them for review, release updates, and check their
 
 **Base URL:** `https://shortcuty.app/api/v1`
 
-[Quickstart](#quickstart-create-a-draft-then-submit-it) · [Apple Shortcuts](#apple-shortcuts-setup) · [Endpoints](#endpoints) · [Fields](#shortcut-fields) · [Taglines](#taglines) · [Troubleshooting](#errors-and-retries)
+[Quickstart](#quickstart-create-a-draft-then-submit-it) · [Apple Shortcuts](#apple-shortcuts-setup) · [Endpoints](#endpoints) · [Fields](#shortcut-fields) · [Taglines](#taglines) · [Action counts](#action-counts) · [Troubleshooting](#errors-and-retries)
 
 ## Authentication
 
@@ -231,6 +231,7 @@ For example, if the pending proposal changes the URL and version, sending only `
   "shortcut_uuid": "123e4567-e89b-12d3-a456-426614174000",
   "changelog": [{
     "version": "1.2.0",
+    "action_count": null,
     "changelog": "Bug fixes",
     "date": "2026-10-15T12:00:00Z",
     "status": "pending",
@@ -241,6 +242,8 @@ For example, if the pending proposal changes the URL and version, sending only `
 ```
 
 Entries include approved, pending, and rejected updates. `changes` contains proposed field changes; sharing URLs are exposed separately in `sharing_url`.
+
+Each entry also includes `action_count`. It is known only when the stored accepted publication proves that exact current approved update. Historical releases, pending/rejected updates, and other unproven entries return `null`; the server does not copy a count between entries that share a version label or URL. See [Action counts](#action-counts).
 
 ### Visibility and pending versions
 
@@ -299,6 +302,8 @@ The table is the request field reference for create and update. A dash means the
 | `version` | String | — | Optional | Up to 50 characters, e.g. `"1.2.0"` |
 | `changelog` | String | — | Optional | Release notes, up to 10,000 characters |
 
+`action_count` is a response-only field. Sending it in a create or update body returns `400`; it cannot override the server's count.
+
 ### Multiple categories
 
 The multi-category release adds `categories`, `primary_category`, and `category_revision` while retaining the existing scalar `category` as the primary. These changes require the coordinated backend schema rollout; this candidate documentation must be published with that release.
@@ -352,6 +357,39 @@ Draft edits apply immediately. Editing a first pending submission keeps it pendi
 
 Tagline translations are separate from author source. Normal submissions/edits and opt-in translation reads can queue matching translations. Changed/cleared taglines cannot reuse a translation for different source text; while a translation is unavailable, clients retain the original. Creator `/api/v1` detail/list responses always return original author text. Saved translation reads are separate, outside the Creator API: `GET /api/shortcuts/<uuid>/translations/<target>?include_tagline=1` or `POST /api/shortcuts/translations/batch` with `include_tagline: true`. Batch items use numeric IDs from ordinary JSON shortcut metadata, not Creator API UUIDs. These routes retain their existing optional-session access checks: approved public shortcuts are readable anonymously; nonpublic/pending sources require an authorized owner/admin session. A Creator Bearer key does not grant that session access. Opt-in source hashes include name, description, and tagline (`shortcut-fields-v2`); legacy translation requests retain their name/description hash. Apply translated text only with a matching target and `field_hashes.tagline` (SHA-256 of original UTF-8 source). Never write translated display text back as the author's source.
 
+### Action counts
+
+Shortcut objects in create, list, and detail responses include the additive read-only field `action_count`. Ordinary app/website JSON shortcut responses, including catalogue lists, trending/recommendations, search, categories, feeds, and detail, use the same field and semantics under their existing access rules.
+
+| Value | Meaning |
+|---|---|
+| Nonnegative integer | Number of entries in the accepted workflow's original, validated `WFWorkflowActions` array |
+| `0` | The inspected workflow has an empty action array |
+| `null` | A count for the published version is unknown or temporarily unavailable |
+| Field absent | An older server response; handle it as unknown |
+
+For example, shortcut response objects may contain:
+
+```json
+{"version":"1.2.0","action_count":27}
+```
+
+```json
+{"version":"1.2.0","action_count":0}
+```
+
+```json
+{"version":"1.2.0","action_count":null}
+```
+
+Counts come from the original workflow bytes during normal processing, independently of AI analysis. They count stored action entries, including control-flow and comment entries, without expanding nested shortcuts or estimating how many actions run. They are not derived from descriptions, generated pseudocode, model guesses, or client input.
+
+The count belongs to the currently accepted published version. While an update is pending, list/detail retain the approved base version's count. Draft, pending, rejected, and delisted shortcut objects return `null`. An older shortcut with no proven accepted count, a changed source, or unavailable count storage also returns `null`; a successful security assessment alone does not guarantee a count is available. Reading the field does not trigger a scan or change moderation status.
+
+JSON changelog/history entries and the ordinary detail response's `latest_update` object also include `action_count`, subject to the exact-update rule in [Get Shortcut History](#get-shortcut-history). Plain-text version endpoints, download links, and redirect formats retain their existing formats.
+
+Clients should allow missing/null values and keep unknown distinct from zero. Show a numeric count only when it is a nonnegative integer; never substitute `0` for an unknown count. Existing response fields and request workflows remain compatible. Counts do not expose private workflow content, security reports, or pending scans.
+
 ### Field names and common mistakes
 
 | Use | Instead of |
@@ -388,6 +426,7 @@ These rules apply to shortcut creation and update bodies.
 | `tagline` | String or null; normalized original author text |
 | `sharing_url` | String |
 | `version` | String or null |
+| `action_count` | Nonnegative integer or null; read-only count for the accepted published version; see [Action counts](#action-counts) |
 | `status` | `draft`, `pending`, `approved`, `rejected`, `delisted` |
 | `category` | String or null, primary |
 | `categories` | Array of names, primary first; empty only for legacy uncategorized records |
