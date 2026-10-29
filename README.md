@@ -510,3 +510,7 @@ Current/latest download routes and formats are unchanged. Old clients may ignore
 Send the revision from the latest shortcut response. A successful response returns those three fields with the updated revision. `409` requires reloading before another edit; nonowner or missing targets return `404`. This endpoint requires the existing app/web session and is outside the v1 API-key endpoint set. No current API-key route or error contract changes.
 
 Public shortcut totals, creator statistics, discovery, rankings and publication-based Discord roles exclude unpublished shortcuts. Owner historical analytics retain them. Unpublish/republish does not add engagement, reset deduplication, change release dates or create a ranking freshness event. Historical downloads contribute once to the existing shortcut total; version-level analytics are not introduced.
+
+## Personalized recommendations
+
+[For You API](FOR-YOU-API.md) documents the session-authenticated likes-based feed, private caching, snapshot pagination and unavailable-state handling. It is separate from the V1 API-key endpoints.
