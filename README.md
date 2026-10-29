@@ -494,3 +494,19 @@ Start an update changelog with the most useful change. After approval, notificat
 ## Requests API
 
 [Requests API v1](REQUESTS-API.md) uses the existing account session under `/api`, with capability-gated availability. Its authentication is separate from the bearer-key V1 shortcut endpoints above.
+
+## Publication and previous-version downloads
+
+Owner publication is separate from review status and direct-link visibility. `is_published` defaults to `true`; unpublishing preserves the shortcut UUID, approved history, likes, lifetime download totals and owner statistics, while removing public access and discovery. Republish restores the currently approved content without resetting its dates or notifying followers. A pending update remains pending. Approval while unpublished does not republish the shortcut. Moderation and account restrictions still apply.
+
+`allow_historical_downloads` defaults to `false`. Owners can enable it in Publication settings. Visitors can then download eligible, recorded public releases while the parent shortcut is currently approved, public and published. The additive changelog fields `download_available` and `download_path` identify available releases. `GET /api/shortcuts/{uuid}/versions/{update_id}/get` checks eligibility again, tracks using the existing shortcut-level dedupe and burst policy, and redirects to the original validated iCloud link. A version label is not a release identifier. Old releases without a public-publication receipt stay unavailable; iCloud availability is not guaranteed. Turning the setting off or unpublishing blocks new Shortcuty-provided downloads, but copied links and files cannot be revoked.
+
+Current/latest download routes and formats are unchanged. Old clients may ignore the optional new response fields. Existing v1 and v2 edit requests preserve publication and history-download settings when they omit them; those endpoints cannot change these settings. The additive session-authenticated owner endpoint is `PUT /api/shortcuts/{uuid}/publication`:
+
+```json
+{"publication_revision": 0, "is_published": false, "allow_historical_downloads": false}
+```
+
+Send the revision from the latest shortcut response. A successful response returns those three fields with the updated revision. `409` requires reloading before another edit; nonowner or missing targets return `404`. This endpoint requires the existing app/web session and is outside the v1 API-key endpoint set. No current API-key route or error contract changes.
+
+Public shortcut totals, creator statistics, discovery, rankings and publication-based Discord roles exclude unpublished shortcuts. Owner historical analytics retain them. Unpublish/republish does not add engagement, reset deduplication, change release dates or create a ranking freshness event. Historical downloads contribute once to the existing shortcut total; version-level analytics are not introduced.
