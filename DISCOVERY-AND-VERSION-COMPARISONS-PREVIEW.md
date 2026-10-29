@@ -1,13 +1,12 @@
 # Discovery criteria and public version comparisons
 
 These additive APIs use explicit schema, writer and read readiness checks.
-Required-app results include only verified current metadata; missing evidence
-stays unknown. Historical facts bind exact approved public update identities.
+The app and website expose category and action-count filters. Historical facts
+bind exact approved public update identities.
 
 ## Discovery
 
-The existing opt-in `GET /api/discover` retains `app` (case-sensitive bundle ID),
-`category` (canonical category, including secondary-category membership), `q`,
+The existing opt-in `GET /api/discover` retains `category` (canonical category, including secondary-category membership), `q`,
 `sort`, `per_page` and filter-bound `cursor`. It adds `min_actions` and
 `max_actions`: inclusive decimal integers in `0…2147483647`, with minimum no larger
 than maximum. Unknown counts do not match a count filter. Known zero does.
@@ -15,6 +14,9 @@ Duplicate, unsupported, malformed and inverted parameters return 400.
 
 `GET /api/discover/filters` returns contract version 1 and boolean `app`,
 `category` and `action_count` capabilities. It accepts no query parameters.
+The existing API `app` parameter and app lookup endpoint remain supported for
+compatibility; the app and website no longer offer required-app filtering. Stored
+metadata is retained, and no further app-metadata extraction is scheduled.
 
 Count filtering narrows with the accepted workflow state/candidate join, then
 verifies the publication identity digest and exact response snapshot with the
@@ -110,9 +112,9 @@ retain the additive storage and approval-compatible writers.
 
 ## Interface
 
-The app and website retain the existing home layout. App/category/action criteria
-are disclosed inside one existing filter control. App choices/categories/capabilities
-load only on opening it.
+The app and website retain the existing home layout. Category/action criteria
+are disclosed inside one existing filter control. Categories/capabilities load
+only on opening it.
 Action presets are any, 0–25, 26–100 and 101+. Clearing criteria restores the original
 home feeds. Comparison opens on demand inside existing history, between adjacent
 approved update IDs; it creates no permanent home section, card badge or toolbar.
