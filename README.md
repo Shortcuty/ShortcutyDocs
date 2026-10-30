@@ -514,3 +514,5 @@ Public shortcut totals, creator statistics, discovery, rankings and publication-
 ## Personalized recommendations
 
 [For You API](FOR-YOU-API.md) documents the session-authenticated likes-based feed, private caching, snapshot pagination and unavailable-state handling. It is separate from the V1 API-key endpoints.
+
+[Search and related-shortcut retrieval](SEMANTIC-RETRIEVAL.md) explains saved-translation and deterministic workflow signals, compatibility and partial coverage.
