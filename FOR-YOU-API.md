@@ -8,7 +8,7 @@
 |---|---|
 | `limit` | Default20; positive integer, capped at40. Legacy alias defaults to10. |
 | `cursor` | Opaque next cursor from this account's previous response. |
-| `refresh=1` | Manual first-page refresh; cannot be combined with a cursor. |
+| `refresh=0` or `refresh=1` | Accepted for older clients and ignored; neither forces recomputation. |
 
 Unknown or repeated parameters return400. Requests require the current account's existing authentication; account restrictions apply regardless of client version.
 
@@ -34,7 +34,7 @@ Unknown or repeated parameters return400. Requests require the current account's
 }
 ```
 
-The example illustrates the field types; diagnostic reasons and snapshot timestamps depend on the current result. Ready responses contain the standard shortcut cards, including categories and nullable action counts. Cursors and snapshots belong to one account, source revision and six-hour epoch. Do not combine pages from different snapshots.
+The example illustrates the field types; diagnostic reasons and snapshot timestamps depend on the current result. Ready responses contain the standard shortcut cards, including categories and nullable action counts. Cursors and snapshots belong to one account and server-generated six-hour snapshot. Do not combine pages from different snapshots.
 
 | State | HTTP | Client behavior |
 |---|---|---|
@@ -49,8 +49,10 @@ Every non-ready result has an empty `shortcuts` array and `available=false`. Nei
 
 ## Refresh and privacy
 
-Revalidate on active-view expiry and after the account's like, block or publication changes. Use an ordinary first-page GET for mutation invalidation; reserve `refresh=1` for manual refresh. Server epochs last six hours; `refresh_after_seconds` reports time remaining. Current bounds are12 reads/minute/account/process, one manual refresh/minute and two concurrent calculations/process.
+Ranking lasts six hours from server generation. Only a saved like/unlike change permits an earlier normal rebuild. Visibility, blocks, reports, publication and source freshness are rechecked on reads and filter or suppress cached results without reranking. Revalidate with ordinary first-page GETs after expiry or confirmed account changes; clients have no force-refresh control. `refresh_after_seconds` reports time remaining. Current bounds are12 reads/minute/account/process and two concurrent calculations/process, with one active read per account.
 
-Responses use `private, no-store`, CDN `no-store` and `Vary: Cookie, Authorization`. Bypass shared response/page/CDN caches. Clear local results on sign-out or account replacement; never show a previous account's feed. Home shows up to six cards and See All; pagination and Refresh belong to the full view.
+Responses use `private, no-store`, CDN `no-store` and `Vary: Cookie, Authorization`. Bypass shared response/page/CDN caches. Clear local results on sign-out or account replacement; never show a previous account's feed. Home shows up to six cards and See All; pagination belongs to the full view. Manual recommendation refresh is unavailable.
 
 Recommendations use existing fresh embeddings of eligible public shortcuts the account liked. Own shortcuts, already liked items, restricted or unpublished content, blocked creators and viewer-reported items are excluded and rechecked on each read. No likes or history are sent to a model provider, and no persistent personal vector or new tracking is created. The bounded private RAM cache expires without processing inactive accounts.
+
+The existing bounded RAM cache is process-local. A server restart or capacity eviction can require a cold rebuild; this is not a client refresh facility. A cursor whose snapshot is absent or expired returns409 without triggering ranking; restart from page one. No schema change is required.
